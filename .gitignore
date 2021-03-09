@@ -37,3 +37,15 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+.Rproj.user
+.Rhistory
+.RData
+_publish.R
+_book
+_bookdown_files
+rsconnect
+temp
+#_slides/*.pdf
+*.log
+
+_dump*
