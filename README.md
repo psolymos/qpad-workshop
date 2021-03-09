@@ -40,23 +40,26 @@ for field observations.
 
 Each day will consist of 3 sessions, roughly one hour each, with short break in between.
 
-- Day 1: Naive techniques
-  - Introductions
-  - Organizing point count data
-  - Regression techniques
-  - Practice: count data regression (real data)
-- Day 2: Behavioral complexities
-  - Statistical assumptions and nuisance variables
-  - Removal modeling techniques
-  - Practice: removal modeling (simulated & real data)
-- Day 3: The detection process
-  - Distance sampling
-  - Calibrating population density
-  - Practice: distance sampling (simulated & real data)
-- Day 4: The QPAD approach
-  - Marginal, joint, and conditional models
-  - QPAD overview
-  - Practice: putting it all together (simulated & real data)
+| Session | Topic | Files |
+| --- | --- | :---: |
+| **Day 1** |  **Naive techniques** |    |
+| Day 1/1 |  Introductions |    |
+| Day 1/1 |  Organizing point count data |  Slides  |
+| Day 1/2 |  Regression techniques  |    |
+| Day 1/3 |  Practice: count data regression (real data)  |    |
+| **Day 2** |  **Behavioral complexities**  |    |
+| Day 2/1 |  Statistical assumptions and nuisance variables  |    |
+| Day 2/2 |  Removal modeling techniques  |    |
+| Day 2/3 |  Practice: removal modeling (simulated & real data)  |    |
+| **Day 3** |  **The detection process** |    |
+| Day 3/1 |  Distance sampling |  Slides  |
+| Day 3/2 |  Calibrating population density  |    |
+| Day 3/3 |  Practice: distance sampling (simulated & real data)  |    |
+| **Day 4** |  **Behavioral complexities**  |    |
+| Day 4/1 |  Marginal, joint, and conditional models  |    |
+| Day 4/2 |  QPAD overview  |    |
+| Day 4/3 |  Practice: putting it all together (simulated & real data)  |    |
+
 
 ## Before the course
 
