@@ -1,4 +1,4 @@
-cat("Helo!\nThis script will install all required R packages for the Point Count Workshop. Hang tight ...\n* Checking R version ... ")
+cat("Helo!\n\nThis script will install required R packages for the\nPoint Count Data AnalysisWorkshop.\n\nHang tight ...\n\n* Checking R version ... ")
 if (getRversion() < 4)
   stop(paste0("R version ", getRversion(), " detected.",
     " Please upgrade to R >= 4.0"))
@@ -16,9 +16,9 @@ gh_pkgs <- c(bSims="psolymos/bSims",
 
 to_inst <- setdiff(pkgs, rownames(installed.packages()))
 if (length(to_inst))
-  install.packages(to_inst)
+  try(install.packages(to_inst))
 for (i in gh_pkgs)
-  remotes::install_github(i, upgrade="never", force=TRUE)
+  try(remotes::install_github(i, upgrade="never", force=FALSE))
 
 still_missing <- setdiff(c(pkgs, names(gh_pkgs)), rownames(installed.packages()))
 if (length(still_missing)) {
