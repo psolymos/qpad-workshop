@@ -1,0 +1,309 @@
+---
+title: "Organizing and Processing Point Count Data"
+author: "Peter Solymos <solymos@ualberta.ca>"
+---
+
+```{r setup,include=FALSE}
+options(width=53, scipen=999)
+library(knitr)
+```
+
+## Preamble
+
+```{r data-load_josm_data,message=TRUE,warning=FALSE}
+library(mefa4)                # data manipulation
+load("data/josm-data.rda")    # load bird data
+```
+
+## Cross tabulating species counts
+
+Take the following dummy data frame (long format):
+
+```{r data-dummy_data}
+(d <- data.frame(
+  sample=factor(paste0("S", c(1,1,1,2,2)), paste0("S", 1:3)),
+  species=c("BTNW", "OVEN", "CANG", "AMRO", "CANG"),
+  abundance=c(1, 1, 2, 1, 1),
+  behavior=rep(c("heard","seen"), c(4, 1)),
+  stringsAsFactors=TRUE))
+str(d)
+```
+
+We want to add up the `abundance`s for each sample (rows) and species (column):
+
+```{r data-xtab_1}
+(y <- Xtab(abundance ~ sample + species, d))
+```
+
+`y` is a sparse matrix, that is a very compact representation because it does not store the 0 values (`.`).
+
+It is called a
+
+- wide format table, 
+- cross table, 
+- pivot table, 
+- 2-way table.
+
+Notice that we have 3 rows, but `d$sample` did not have an `S3` value, but it was only a factor level without a corresponding observation.
+
+We can drop such unused levels, but it is generally not recommended, and we need to be careful not to drop samples where no species was detected (this can happen quite often depending on timing of surveys).
+
+```{r data-xtab_2}
+Xtab(abundance ~ sample + species, d, drop.unused.levels = TRUE)
+```
+
+The current tendency is to treat such data as character. Let's see what happens if we go with the flow and subset our data frame:
+
+```{r data-char}
+d2 <- d
+d2$sample <- as.character(d2$sample)
+d2$species <- as.character(d2$species)
+str(d2)
+Xtab(abundance ~ sample + species, d2)
+Xtab(abundance ~ sample + species, d2[d2$species=="OVEN",])
+```
+
+It is the same as dropping unused levels. Compare this to the output most of us want:
+
+```{r data-char2}
+Xtab(abundance ~ sample + species, d[d$species=="OVEN",], cdrop=TRUE)
+```
+
+A sparse matrix can be converted to ordinary matrix
+
+```{r data-xtab_as_matrix}
+as.matrix(y)
+```
+
+We can take a subset that retains the matrix structure
+
+```{r data-subset}
+y[,"OVEN",drop=FALSE]
+```
+
+Dropping the dimension will lead to a numeric vector
+
+```{r data-subset2}
+y[,"OVEN"]
+```
+
+The nice thing about this cross tabulation is that we can filter the records without changing the structure (rows, columns) of the table:
+
+```{r data-xtab_3}
+Xtab(abundance ~ sample + species, d[d$behavior == "heard",])
+Xtab(abundance ~ sample + species, d[d$behavior == "seen",])
+```
+
+Another common way of preserving empty samples is to add a placeholder species called `"NONE"` to the data for the sample where no species were detected
+
+```{r data-none}
+d3 <- (d <- data.frame(
+  sample=factor(paste0("S", c(1,1,1,2,2,3)), paste0("S", 1:3)),
+  species=c("BTNW", "OVEN", "CANG", "AMRO", "CANG", "NONE"),
+  abundance=c(1, 1, 2, 1, 1, 0),
+  behavior=c(rep(c("heard","seen"), c(4, 1)), NA),
+  stringsAsFactors=FALSE))
+str(d3)
+Xtab(abundance ~ sample + species, d3)
+```
+
+Now we have the `S3` sample in the cross table.
+The summary is that we need to be careful with filtering.
+We need to check to still have the full list of samples that we expect.
+
+### Exercise
+
+1. Try making crosstabs using different subsets of the data frames
+2. Use row and column indices to make subsets
+3. See what `rdrop=TRUE` or `cdrop=TRUE` does in the `Xtab()` call
+4. See what happens if you omit the left-hand side of the formula (`Xtab(~ sample + species, d)`)
+5. Try making a 3-way table (`Xtab(abundance ~ sample + species + behavior, d)`)
+
+## Alberta data
+
+The `josm` obeject is a list with 3 elements:
+
+- `surveys`: data frame with survey specific information,
+- `species`: lookup table for species,
+- `counts`: individual counts by survey and species.
+
+```{r data-josm_data}
+names(josm)
+```
+
+Species info: species codes, common and scientific names. The table could also contain taxonomic, trait, etc. information as well.
+
+```{r data-josm_species}
+head(josm$species)
+```
+
+At the survey level, we have coordinates, date/time info,
+variables capturing survey conditions, and land cover info extracted from 1 km$^2$ resolution rasters.
+
+```{r data-josm_surveys}
+colnames(josm$surveys)
+```
+
+The count table contains one row for each unique individual 
+of a species (`SpeciesID` links to the species lookup table)
+observed during a survey (`StationID` links to the survey attribute table).
+
+```{r data-josm_counts}
+str(josm$counts)
+```
+
+### Crosstab
+
+We have no abundance column, because each row stands for exactly one individual. We can add a column with 1's, or we can just count the number of rows by using only the right-hand-side of the formula in `Xtab()`. `ytot` will be our total count matrix for now.
+
+We also want to filter the records to contain only `S`ongs and `C`alls, without
+`V`visual detections:
+
+```{r data-beh}
+table(josm$counts$DetectType1, useNA="always")
+```
+
+We use `SiteID` for row names, because only 1 station and visit was done at each site:
+
+```{r data-xtab_4}
+ytot <- Xtab(~ SiteID + SpeciesID,
+             data = josm$counts[josm$counts$DetectType1 != "V",])
+```
+
+The reverse operation to `Xtab()` is `Melt()`:
+
+```{r data-melt}
+yrev <- Melt(ytot)
+head(yrev)
+nrow(josm$counts[josm$counts$DetectType1 != "V",])
+nrow(yrev) # a lot less rows due to aggregating counts
+```
+
+See how not storing 0's affect size compared to the long format and an ordinary wide matrix (use `yrev` to make the comparison fair, the original data frame contained a lot more info about the individual events, here we only compare the aggregated data)
+
+```{r data-xtab_matrix_2}
+## 2-column data frame as reference
+tmp <- as.numeric(object.size(yrev))
+## spare matrix
+as.numeric(object.size(ytot)) / tmp
+## dense matrix
+as.numeric(object.size(as.matrix(ytot))) / tmp
+## matrix fill
+sum(ytot > 0) / prod(dim(ytot))
+```
+
+Check if counts are as expected:
+
+```{r}
+max(ytot) # this is interesting
+sort(apply(as.matrix(ytot), 2, max)) # it is CANG
+
+## flyover (FO) flock (FL) beyond 100m distance
+head(josm$counts[
+  josm$counts$SiteID == rownames(ytot)[which(ytot[,"CANG"] == 200)] &
+  josm$counts$SpeciesID == "CANG",])
+```
+
+We can check overall mean counts:
+
+```{r data-mean_counts}
+round(sort(colMeans(ytot)), 4)
+```
+
+### Joining species data with predictors
+
+Let's join the species counts with the survey attributes. 
+This is how we can prepare the input data for regression analysis.
+
+```{r data-join}
+spp <- "OVEN" # which species
+josm$species[spp,]
+
+## a quick way of cross checking sample IDs
+compare_sets(rownames(josm$surveys),rownames(ytot))
+
+## a new data frame for analysis
+x <- josm$surveys
+x$y <- ytot[rownames(x), spp] # subset the sparse matrix
+plot(table(x$y))
+```
+
+### Explore predictor variables
+
+Load a raster stack where some of the variables in `x` were coming from
+
+```{r data-xy}
+library(sf)
+library(raster)               # reading raster files
+rr <- stack("data/josm-landcover-hfi2016.grd") # rasters
+rr
+```
+
+Let's create a simple feature object matching the raster projection
+
+```{r data-xy2}
+xy <- st_as_sf(x,
+    coords = c("Longitude", "Latitude"), 
+    crs = 4269) # NAD83 EPSG:4269
+## NAD83 / Alberta 10-TM (Forest) EPSG:3400
+xy <- st_transform(xy, st_crs(rr))
+```
+
+Put the locations on the map:
+
+```{r data-xy3}
+col <- colorRampPalette(c("lightgrey", "blue"))(100)
+plot(rr[["Water"]], col=col, axes=FALSE, box=FALSE, legend=FALSE)
+plot(xy$geometry, add=TRUE, pch=19, cex=0.2)
+## some visible features: Piece River, Athabasca, Lesser Slave Lake
+```
+
+### Derived variables
+
+Add up some of the compositional variables into meaningful units:
+
+```{r data-deriv1}
+x$FOR <- x$Decid + x$Conif+ x$ConifWet # forest
+x$AHF <- x$Agr + x$UrbInd + x$Roads # 'alienating' human footprint
+x$WET <- x$OpenWet + x$ConifWet + x$Water # wet + water
+```
+
+Classify surveys locations based on dominant land cover type:
+this is a shortcut that pays off when it comes to predicting at
+spatial scales different than the scale where proportion info
+is coming from
+
+```{r data-deriv2}
+## define column names
+cn <- c("Open", "Water", "Agr", "UrbInd", "SoftLin", "Roads", "Decid", 
+  "OpenWet", "Conif", "ConifWet")
+## these sum to 1
+summary(rowSums(x[,cn]))
+## see how these are correlated
+corrplot::corrplot(cor(x[,cn]), "ellipse")
+```
+
+The `find_max()` function finds the maximum value in each row,
+the output containes the value and the column where it was found,
+which is exactly the info we need
+
+```{r data-deriv3}
+h <- find_max(x[,cn])
+hist(h$value)
+table(h$index)
+x$HAB <- droplevels(h$index) # drop empty levels
+```
+
+We can use the value to exclude sites that do not contain
+at least a certain proportion of the dominant land cover type (e.g. <25%),
+or we can use this info to assign less weight to such "contaminated" sites 
+(i.e. the dominant land cover is contaminated by other cover types).
+Finding dominant land cover is is more meaningful at smaller spacial scales.
+
+### Exercise
+
+1. Look at individual continuous variables using `summary()`, `hist()`
+2. Look at discrete variables using `table()`
+3. Explore bivariate relationships between continuous variables using `plot()`
+4. Explore bivariate relationships between continuous and discrete variables using `boxplot()`
+5. Explore multivariate relationships using scatterplot matrix (`plot()`)
