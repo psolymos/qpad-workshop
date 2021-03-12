@@ -6,7 +6,7 @@ cat("OK\n* Installing R packages ... \n")
 
 pkgs <- c("bookdown", "detect", "remotes", "dismo",
   "Distance", "forecast", "glmnet", "gbm", "intrval",
-  "knitr", "lme4", "maptools", "mefa4",
+  "knitr", "lme4", "maptools", "mefa4", "corrplot",
   "mgcv", "MuMIn", "opticut", "partykit", "pscl", "raster",
   "ResourceSelection", "shiny", "sp", "unmarked", "visreg")
 gh_pkgs <- c(bSims="psolymos/bSims",
