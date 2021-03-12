@@ -1,0 +1,25 @@
+[general]
+creator=R package 'raster'
+created=2019-05-31 15:23:16
+[georeference]
+nrows=390
+ncols=475
+xmin=349616.18219025
+ymin=6029532.4310941
+xmax=824616.18219025
+ymax=6419532.4310941
+projection=+proj=tmerc +lat_0=0 +lon_0=-115 +k=0.9992 +x_0=500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs
+[data]
+datatype=FLT4S
+byteorder=little
+nbands=10
+bandorder=BIL
+minvalue=0:0:0:0:0:0:0:0:0:0
+maxvalue=0.977592457038605:1:1:1:0.335424381235926:0.725303714828833:1:0.999214886535576:1:1
+nodatavalue=-3.4e+38
+[legend]
+legendtype=
+values=
+color=
+[description]
+layername=Open:Water:Agr:UrbInd:SoftLin:Roads:Decid:OpenWet:Conif:ConifWet
