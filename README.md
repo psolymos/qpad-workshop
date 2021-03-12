@@ -43,10 +43,9 @@ Each day will consist of 3 sessions, roughly one hour each, with short break in 
 | Session | Topic | Files |
 | --- | --- | :---: |
 | **Day 1** |  **Naive techniques** |    |
-|  |  Introductions |    |
-|  |  1. Organizing point count data |  Slides  |
-|  |  2. Regression techniques  |    |
-|  |  3. Practice: count data regression (real data)  |    |
+|  |  1. Introductions |  [Slides](day1-1-intro.pdf)  |
+|  |  2. Organizing point count data |  [Notes](day1-2-data-processing.Rmd)  |
+|  |  3. Regression techniques  |    |
 | **Day 2** |  **Behavioral complexities**  |    |
 |  |  1. Statistical assumptions and nuisance variables  |    |
 |  |  2. Removal modeling techniques  |    |
