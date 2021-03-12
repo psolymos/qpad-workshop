@@ -1,0 +1,413 @@
+---
+title: "Introduction"
+date: "Point count data analysis workshop, BIOS2 2021, March 16-25"
+author: "Peter Solymos"
+fontsize: 11pt
+urlcolor: blue
+output:
+  beamer_presentation:
+    theme: "Singapore"
+    incremental: false
+    includes:
+      in_header: preamble.tex
+---
+
+```{r setup,include=FALSE}
+options(width=53, scipen=999)
+library(knitr)
+opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Housekeeping
+
+- Camera on optional
+- Go for a break as needed (2 breaks/session)
+- Stretch
+
+***
+
+# Housekeeping
+
+Questions:
+
+- Live
+- In the chat
+- Or https://hackmd.io/@psolymos/qpad-2021
+
+**Juan Andres** (TA) will organize these, thanks!
+
+***
+
+# About the instructor
+
+- **Peter Solymos**
+- Stat ecologist,
+- R programmer (vegan, detect, ResourceSelection, pbapply),
+- Sometimes I teach
+- [\@psolymos](https://twitter.com/psolymos)
+
+***
+
+# Acknowledgement
+
+I am situated on Indigenous land in Treaty 6 territory;
+land occupied, traveled, and cared for by Indigenous Peoples
+since time immemorial to the present day.
+
+***
+
+# What you will learn
+
+1. How to analyze your point count data when it combines different methodologies/protocols/technologies
+2. How to violate assumptions and get away with it
+
+***
+
+# Outline
+
+Day 1
+
+- Introduction
+- We need to talk about data
+- A primer in regression techniques
+
+Day 2
+
+- Behavioral complexities
+
+Day 3
+
+- The detection process
+- Dealing with recordings
+
+Day 4
+
+- Putting it all together
+- Understanding roadside surveys
+
+***
+
+# Install packages
+
+```{r eval=FALSE}
+source(
+  paste0("https://raw.githubusercontent.com/",
+  "psolymos/qpad-workshop/main/src/install.R")
+)
+```
+
+***
+
+# Get course materials
+
+1. Visit [https://github.com/psolymos/qpad-workshop/releases](https://github.com/psolymos/qpad-workshop/releases)
+2. Download the latest release into a folder
+3. Extract the zip/tar.gz archive
+4. Open the `workshop.Rproj` file in RStudio (or open any other R GUI/console and `setwd()` to the directory where you downloaded the file)
+5. (You can delete the archive)
+
+***
+
+# Apples and oranges
+
+_"A comparison of apples and oranges occurs when two items or groups of items are compared that 
+cannot be practically compared."_ [_Wikipedia_]
+
+How we measure things can have big impact on our results.
+
+- You might say: I saw 5 magpies (walking down the street),
+- I might say: I only saw one (sitting on my deck)
+
+***
+
+# Apples to apples
+
+Effort:
+
+- *area* of the physical space searched
+- amount of *time* spent
+- number of *individuals* identified
+
+Experience, skill etc.:
+
+- number of years in field work
+- eye sight, hearing ability
+- microphone sensitivity, damage
+
+The goal is to make our measurements **comparable**.
+
+***
+
+# Effects can be significant
+
+\centering
+```{r echo=FALSE,out.width="200px"}
+include_graphics("images/matsuoka-2014-fig-2.png")
+```
+
+10-min unlimited count ~300% increase over 3-min 50-m count. 
+Average across 54 species of boreal songbirds[^1].
+
+[^1]: Matsuoka et al. 2014, [Condor 116:599--608](http://dx.doi.org/10.1650/CONDOR-14-108.1).
+
+***
+
+# What is a point count?
+
+- A trained observer 
+- records all the birds 
+- seen and heard 
+- from a point count station 
+- for a set period of time
+- within a defined distance radius.
+
+***
+
+# Questions we want to answer using point counts
+
+- How many? (Abundance, density, population size)
+- Is this location part of the range? (0/1)
+- How is abundance changing in space? (Distribution)
+- How is abundance changing in time? (Trend)
+- What is the effect of a treatment on (relative) abundance?
+
+***
+
+# Design based standardization
+
+Have a set of standards/recommendations that people will follow to
+
+- Maximize efficiency in the numbers of birds and species counted
+- Minimize extraneous variability in the counts[^2]
+
+But programs started to deviate from standards:
+
+_"For example, only 3% of 196,000 point counts conducted during the period
+1992--2011 across Alaska and Canada followed the standards recommended for the count period and count radius."_[^1] 
+
+[^2]: Ralph et al. 1993, [Handbook of field methods for monitoring landbirds](http://dx.doi.org/10.3996/012016-JFWM-002.S5).
+
+***
+
+# My protocol, your protocol
+
+\centering
+```{r echo=FALSE,out.width="250px"}
+include_graphics("images/barker-2015-fig-2.png")
+```
+
+Survey methodology variation (colors) among contributed projects
+in the Boreal Avian Modelling (BAM) data base as of 2014[^3].
+
+[^3]: Barker et al. 2015, [WSB 39(3):480--487](http://dx.doi.org/10.1002/wsb.567).
+
+***
+
+# Pop quiz
+
+- In what regard can protocols differ?
+- What drives protocol variation among projects?
+- Why have we abandoned following protocols?
+
+***
+
+# Moving away from standards
+
+- Detection probabilities might vary even with fixed effort (we'll cover this later in depth)
+- Programs might have their own goals and constraints (access, training, etc.)
+
+***
+
+# Model based approaches
+
+Less labor intensive methods for *unmarked populations* have come to the forefront:
+
+- double observer ([Nichols et al. 2000](https://doi.org/10.1642/0004-8038(2000)117[0393:ADOAFE]2.0.CO;2)),
+- distance sampling ([Buckland et al. 2001](https://global.oup.com/academic/product/introduction-to-distance-sampling-9780198509271)),
+- removal sampling ([Farnsworth et al. 2002](https://doi.org/10.1642/0004-8038(2002)119[0414:ARMFED]2.0.CO;2)),
+- multiple visit occupancy ([MacKenzie et al. 2002](https://doi.org/10.1890/0012-9658(2002)083[2248:ESORWD]2.0.CO;2)),
+- multiple visit abundance ([Royle 2004](https://doi.org/10.1111/j.0006-341X.2004.00142.x)).
+
+***
+
+# Models come with assumptions
+
+- Population is closed during multiple visits
+- Observers are independent
+- All individuals emit cues with identical rates
+- Spatial distribution of individuals is random
+- Etc.
+
+***
+
+# Assumptions are everywhere
+
+Although assumptions are everywhere, we are really good at ignoring them:
+
+- Relativistic time dilation is negligible (as long as we are not on a space station)
+- Samples are independent
+
+***
+
+# Pop quiz
+
+- Can you mention some other common assumptions?
+- Can you explain why we neglect/violate assumptions?
+
+***
+
+# The hard truth
+
+Assumptions are violated in many ways, because we seek simplicity
+
+The main question we have to ask: **does it matter in practice**?
+
+***
+
+# Our approach
+
+1. Introduce a concept
+2. Understand how we can infer it from data
+3. Recreate the situation _in silico_
+4. See how the outcomes change as we make different assumptions
+
+***
+
+# How to get away
+
+It is guaranteed that we violate **every** assumption we make.
+
+To get away with it, we need to understand **how much is too much**.
+
+_"All assumptions are violated, but some are more than others."_--Me
+
+***
+
+\centering
+```{r echo=FALSE,out.width="250px"}
+include_graphics("images/gremlins.jpg")
+```
+
+Source: [\@pegleraj](https://twitter.com/pegleraj/status/1122414485203976193)
+
+***
+
+# Tidy workflow
+
+\centering
+```{r echo=FALSE,out.width="250px"}
+include_graphics("images/data-science.png")
+```
+
+Source: [r4ds](https://r4ds.had.co.nz/introduction.html)
+
+***
+
+# Tidy time tracking
+
+\centering
+```{r echo=FALSE,out.width="250px"}
+include_graphics("images/tidy.png")
+```
+
+Letters proportional to time spent
+
+***
+
+# Data ...
+
+It is often called:
+
+- processing,
+- munging,
+- wrangling,
+- cleaning.
+
+None of these expressions capture the dread associated with the actual activity.
+
+_"All data are messy, but some are missing."_
+
+***
+
+# First mover disadvantage
+
+If you are the first person to ever look at the data,
+hope for the best, expect the worst.
+
+If no one looked, no one found the problems yet.
+
+***
+
+# The four horsemen
+
+Luckily, there are only 4 things that can get messed up:
+
+1. space (e.g. wrong UTM zones),
+2. time (ISO format please),
+3. taxonomy (UNK, mis-ID),
+4. something else ($\rightarrow$ check again).
+
+Check out source code if you are interested in data processing,
+we skip that for now to concentrate on the fun part.
+
+***
+
+# JOSM (Joint Oil Sands Monitoring) data
+
+\centering
+```{r echo=FALSE,out.width="220px"}
+include_graphics("images/mahon-2016-fig-1.png")
+```
+
+Cause-Effect Monitoring Migratory Landbirds at Regional Scales[^4][^5]: understand how boreal songbirds are affected by human activity in the oil sands area.
+
+[^4]: Mahon et al. 2016, [For. Ecol. Man.](http://dx.doi.org/10.1016/j.foreco.2015.11.007)
+[^5]: Mahon et al. 2019, [Ecol. Appl.](http://dx.doi.org/10.1002/eap.1895)
+
+***
+
+# Survey design
+
+\centering
+```{r echo=FALSE,out.width="250px"}
+include_graphics("images/mahon-2016-fig-2.png")
+```
+
+Survey area boundary ($r$=2.5 km circle), habitat type and human footprint mapping, and clustered point count site locations.
+
+***
+
+# Sampling, replication
+
+- We want to make inferences about a population,
+- full census is out of reach,
+- thus we take a sample of the population
+- that is representative and random.
+- Ideally, sample size should be as large as possible,
+- it reduces variability and 
+- increases statistical power.
+
+***
+
+# How do we pick survey locations
+
+- Stratification,
+- gradients,
+- random location (control for unmeasured effects),
+- take into account historical surveys (avoid, or revisit),
+- access, cost (clusters).
+
+***
+
+# Dive into the data
+
+After the break
+
+```{r}
+load("data/josm.rda")
+names(josm)
+```
+
