@@ -1,6 +1,6 @@
 # Analysis of point-count data in the presence of variable survey methodologies and detection error
 
-> This course was originally developed for [BIOS2](https://bios2.usherbrooke.ca/2021/02/21/training-point-count-data-analysis/) held on March 16, 18, 23, 25 10am-1pm MT (9-12 Pacific, 1pm-4 EST)
+> This course was originally developed for [BIOS2](https://bios2.usherbrooke.ca/2021/02/21/training-point-count-data-analysis/) held on March 16, 18, 23, 25 - Pacific: 9am-12pm, Mountain: 10am-1pm, Central: 11am-2pm, Eastern: 12-3pm
 
 This course is aimed towards researchers analyzing field observations,
 who are often faced by data heterogeneities due to
