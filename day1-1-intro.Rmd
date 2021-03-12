@@ -407,7 +407,7 @@ Survey area boundary ($r$=2.5 km circle), habitat type and human footprint mappi
 After the break
 
 ```{r}
-load("data/josm.rda")
+load("data/josm-data.rda")
 names(josm)
 ```
 
