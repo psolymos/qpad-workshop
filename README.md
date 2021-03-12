@@ -45,7 +45,7 @@ Each day will consist of 3 sessions, roughly one hour each, with short break in 
 | **Day 1** |  **Naive techniques** |    |
 |  |  1. Introductions |  [Slides](day1-1-intro.pdf)  |
 |  |  2. Organizing point count data |  [Notes](day1-2-data-processing.Rmd)  |
-|  |  3. Regression techniques  |    |
+|  |  3. Regression techniques  |  [Notes](day1-3-regression.Rmd)  |
 | **Day 2** |  **Behavioral complexities**  |    |
 |  |  1. Statistical assumptions and nuisance variables  |    |
 |  |  2. Removal modeling techniques  |    |
@@ -80,9 +80,28 @@ The course will be delivered online using Zoom. The course will be recorded with
 
 We will keep course related conversation and questions in the following collaborative markdown file: [https://hackmd.io/@psolymos/qpad-2021](https://hackmd.io/@psolymos/qpad-2021) Please scroll down to the Parking Lot section to add your ideas and questions.
 
+### Get course materials
+
+I might make last minute changes, so it is recommended to update your files before the sessions.
+
+If you don't want to use git:
+
+1. Visit [https://github.com/psolymos/qpad-workshop/releases](https://github.com/psolymos/qpad-workshop/releases)
+2. Download the latest release into a folder
+3. Extract the zip/tar.gz archive
+4. Open the `workshop.Rproj` file in RStudio (or open any other R GUI/console and `setwd()` to the directory where you downloaded the file)
+5. (You can delete the archive)
+
+If you want to use git: fork or clone the repository
+
+```bash
+cd into/your/dir
+git clone https://github.com/psolymos/qpad-workshop.git
+```
+
 ## After the course
 
-Follow up.
+Expect some follow up :)
 
 ## License
 

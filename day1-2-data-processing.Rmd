@@ -233,7 +233,7 @@ plot(table(x$y))
 Load a raster stack where some of the variables in `x` were coming from
 
 ```{r data-xy}
-library(sf)
+library(sf)                   # simple features
 library(raster)               # reading raster files
 rr <- stack("data/josm-landcover-hfi2016.grd") # rasters
 rr
