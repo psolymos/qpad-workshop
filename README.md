@@ -2,31 +2,15 @@
 
 > This course was originally developed for [BIOS2](https://bios2.usherbrooke.ca/2021/02/21/training-point-count-data-analysis/) held on March 16, 18, 23, 25 - Pacific: 9am-12pm, Mountain: 10am-1pm, Central: 11am-2pm, Eastern: 12-3pm
 
-This course is aimed towards researchers analyzing field observations,
-who are often faced by data heterogeneities due to
-field sampling protocols changing from one project to another,
-or through time over the lifespan of projects, or trying to combine
-'legacy' data sets with new data collected by recording units.
+This course is aimed towards researchers analyzing field observations, who are often faced by data heterogeneities due to field sampling protocols changing from one project to another, or through time over the lifespan of projects, or trying to combine 'legacy' data sets with new data collected by recording units.
 
-Such heterogeneities can bias analyses when data sets are integrated
-inadequately, or can lead to information loss when filtered and standardized to
-common standards. Accounting for these issues is important for better
-inference regarding status and trend of species and communities.
+Such heterogeneities can bias analyses when data sets are integrated inadequately, or can lead to information loss when filtered and standardized to common standards. Accounting for these issues is important for better inference regarding status and trend of species and communities.
 
-Analysts of such 'messy' data sets need to feel comfortable
-with manipulating the data, need a full understanding the mechanics of the
-models being used (i.e. critically interpreting the results and acknowledging
-assumptions and limitations), and should be able to make informed choices when
-faced with methodological challenges.
+Analysts of such 'messy' data sets need to feel comfortable with manipulating the data, need a full understanding the mechanics of the models being used (i.e. critically interpreting the results and acknowledging assumptions and limitations), and should be able to make informed choices when faced with methodological challenges.
 
-The course emphasizes critical thinking and active learning
-through hands on programming exercises.
-We will use publicly available data sets to demonstrate the data manipulation
-and analysis. We will use freely available and open-source R packages.
+The course emphasizes critical thinking and active learning through hands on programming exercises. We will use publicly available data sets to demonstrate the data manipulation and analysis. We will use freely available and open-source R packages.
 
-The expected outcome of the course is a solid foundation for further
-professional development via increased confidence in applying these methods
-for field observations.
+The expected outcome of the course is a solid foundation for further professional development via increased confidence in applying these methods for field observations.
 
 ## Instructor
 
@@ -47,17 +31,16 @@ Each day will consist of 3 sessions, roughly one hour each, with short break in 
 |  |  2. Organizing point count data |  [Notes](day1-2-data-processing.Rmd)  |
 |  |  3. Regression techniques  |  [Notes](day1-3-regression.Rmd)  |
 | **Day 2** |  **Behavioral complexities**  |    |
-|  |  1. Statistical assumptions and nuisance variables  |    |
-|  |  2. Removal modeling techniques  |    |
-|  |  3. Practice: removal modeling (simulated & real data)  |    |
+|  |  1. Statistical assumptions and nuisance variables  |  Slides  |
+|  |  2. Removal modeling techniques  |  Notes  |
 | **Day 3** |  **The detection process** |    |
-|  |  1. Distance sampling |  Slides  |
+|  |  1. Distance sampling |    |
 |  |  2. Calibrating population density  |    |
-|  |  3. Practice: distance sampling (simulated & real data)  |    |
+|  |  3. Observer effects  |    |
 | **Day 4** |  **Behavioral complexities**  |    |
 |  |  1. Marginal, joint, and conditional models  |    |
-|  |  2. QPAD overview  |    |
-|  |  3. Practice: putting it all together (simulated & real data)  |    |
+|  |  2. Roadside surveys  |    |
+|  |  3. QPAD overview  |    |
 
 
 ## Before the course

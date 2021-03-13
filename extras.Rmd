@@ -1,0 +1,35 @@
+---
+title: "Extras"
+author: "Peter Solymos <solymos@ualberta.ca>"
+---
+
+## Linear feature effects
+
+## Censored Poisson data as detection/non-detection
+
+```{r}
+x$y01 <- ifelse(x$y > 0, 1, 0)
+table(x$y, x$y01)
+```
+
+$W$ is random variable based on $Y > 0$, that follows a Bernoulli distribution with probability $p$: $W=I_{(Y>0)}$, $W \mid p \sim Bernoulli(p)$, $W \in (0,1)$. 
+The Bernoulli probability mass function is defined as:
+$P(W=w) = p(1-p)=(1-e^{-\lambda} ) e^{-\lambda} = p^w (1-p)^{(1-w)}$.
+
+Censored Poisson distribution with mean $\lambda$ is: $(Y \mid \lambda) \sim  Poisson(\lambda)$, $Y=1,2,3,\ldots$, $(Y^* \mid \lambda) ~ CensoredPoisson(\lambda)$, $Y^* \in (0,1)$.
+
+The Censored Poisson probability mass function: $P(Y^*=y^*)=I_{(Y>0)} (1-e^{-\lambda} )+I_{(Y=0)} e^{-\lambda}$, $= w (1-e^{-\lambda})+(1-w) e^{-\lambda}$, $= (1-e^{-\lambda} )^w (e^{-\lambda})^{(1-w)}$, $= p^w (1-p)^{(1-w)}$.
+
+Based on the equivalence, $p=1-e^{-\lambda}$, a Binomial GLM with the complementary log-log (cloglog) link function is equivalent to a Censored Poisson model with logarithmic link:
+$1-p=e^{-\lambda}$, $log(1-p)={-\lambda}$, $-log(1-p)=e^\mu=\lambda$, $log(-log(1-p))=X^T\hat{\beta}=\mu=log(\lambda)$, where $X^T\hat{\beta}$ is the linear predictor.
+
+```{r}
+#mP <- glm(y ~ Decid * ConifWet, data=x, family=poisson)
+mB <- glm(y01 ~ Decid * ConifWet, data=x, family=binomial("cloglog"))
+cbind(Poisson=coef(mP), cloglog=coef(mB))
+
+mean(fitted(mP))
+mean(fitted(mB))
+mean(exp(model.matrix(mB) %*% coef(mB)))
+```
+

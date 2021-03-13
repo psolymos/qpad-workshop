@@ -1,0 +1,826 @@
+---
+title: "A Primer in Regression Techniques"
+author: "Peter Solymos <solymos@ualberta.ca>"
+---
+
+> All models are wrong, but some are useful -- Box
+
+## Introduction
+
+This chapter will provide all the foundations we need for the coming chapters. It is not intended as a general and all-exhaustive introduction to regression techniques, but rather the minimum requirement moving forwards. We will also hone our data processing and plotting skills.
+
+## Prerequisites
+
+```{r regr-libs,message=TRUE,warning=FALSE}
+library(mefa4)                # data manipulation
+library(mgcv)                 # GAMs
+library(pscl)                 # zero-inflated models
+library(lme4)                 # GLMMs
+library(MASS)                 # Negative Binomial GLM
+library(partykit)             # regression trees
+library(intrval)              # interval magic
+library(opticut)              # optimal partitioning
+library(visreg)               # regression visualization
+library(ResourceSelection)    # marginal effects
+library(MuMIn)                # multi-model inference
+source("src/functions.R")         # some useful stuff
+load("data/josm-data.rda") # JOSM data
+```
+
+Let's pick a species, Ovenbird (`OVEN`), that is quite common and abundant in the data set. We put together a little data set to work with:
+
+```{r regr-data}
+spp <- "OVEN"
+
+ytot <- Xtab(~ SiteID + SpeciesID, josm$counts[josm$counts$DetectType1 != "V",])
+ytot <- ytot[,colSums(ytot > 0) > 0]
+x <- data.frame(
+  josm$surveys, 
+  y=as.numeric(ytot[rownames(josm$surveys), spp]))
+x$FOR <- x$Decid + x$Conif+ x$ConifWet # forest
+x$AHF <- x$Agr + x$UrbInd + x$Roads # 'alienating' human footprint
+x$WET <- x$OpenWet + x$ConifWet + x$Water # wet + water
+cn <- c("Open", "Water", "Agr", "UrbInd", "SoftLin", "Roads", "Decid", 
+  "OpenWet", "Conif", "ConifWet")
+x$HAB <- droplevels(find_max(x[,cn])$index) # drop empty levels
+x$DEC <- ifelse(x$HAB == "Decid", 1, 0)
+
+table(x$y)
+```
+
+## Poisson null model
+
+The null model states that the expected values of the count at all locations are identical: $E[Y_i]=\lambda$ ($i=1,...,n$), where $Y_i$ is a random variable that follows a Poisson distribution with mean $\lambda$: $(Y_i \mid \lambda) \sim Poisson(\lambda)$. The observation ($y_i$) is a realization of the random variables $Y$ at site $i$, these observations are independent and identically distributed (i.i.d.), and we have $n$ observations in total.
+
+Saying the the distribution is Poisson is an assumption in itself. For example we assume that the variance equals the mean ($V(\mu)=\mu$).
+
+```{r regr-pois1}
+mP0 <- glm(y ~ 1, data=x, family=poisson)
+mean(x$y)
+mean(fitted(mP0))
+exp(coef(mP0))
+```
+
+The `family=poisson` specification implicitly assumes that we use a logarithmic link functions, that is to say that $log(\lambda) = \beta_0$, or equivalently: $\lambda = e^{\beta_0}$. The mean of the observations equal the mean of the fitted values, as expected.
+
+The logarithmic function is called the link function, its inverse, the exponential function is called the inverse link function. The model family has these convenently stored for us:
+
+```{r regr-family}
+mP0$family
+mP0$family$linkfun
+mP0$family$linkinv
+```
+
+Inspect the summary
+
+```{regs-pois2}
+summary(mP0)
+```
+
+Notice:
+
+- residuals are not symmetric around 0 and median equals the minimum
+- residual deviance much higher than residual degrees of freedom
+
+These indicate that our parametric model (Poisson error distribution, constant expected value) is not quite right. See if we can improve that somehow
+and explain more of the variation.
+
+We can pick an error distribution that would fit the residuals around the constant expected value better (i.e. using random effects). But this would be a really useless exercise because we would not learn about what is driving the variation in the counts. Thus we would have a really hard time predicting abundance of the species for unsampled locations. We would be right on average, but we wouldn't be able to tell how abundance varies along e.g. a disturbance gradient.
+
+An alternative approach would be to find predictors that could explain the variation.
+
+## Exploring covariates
+
+Now, in the absence of info about species biology, we are looking at a blank page. How should we proceed? What kind of covariate (linear predictor) should we use? We can do a quick and dirty exploration to see what are the likely candidates. We use a regression tree (`ctree` refers to conditional trees). It is a non-parametric method based on binary recursive partitioning in a conditional inference framework.
+
+This means that binary splits are made along the predictor variables, and the explanatory power of the split is assessed based on how it maximized difference between the splits and minimized the difference inside the buckets created by the splits.
+
+It is called conditional, because every new split is conditional on the previous splits (difference can be measured in many different ways, think e.g. sum of squares). The stopping rule in this implementation is based on permutation tests (see `?ctree` or details and references).
+
+```{r regr-ctree,fig.width=20,fig.height=15}
+mCT <- ctree(y ~ Open + Water + Agr + UrbInd + SoftLin + Roads + 
+  Decid + OpenWet + Conif + ConifWet, data=x)
+plot(mCT)
+```
+
+The model can be seen as a piecewise constant regression, where each bucket (defined by the splits along the tree) yields a constant predictions based on the mean of the observations in the bucket. Any new data classified into the same bucket will get the same value. There is no notion of uncertainty (confidence or prediction intervals) in this nonparameric model.
+
+But we see something very useful: the proportion of deciduous forest in the landscape seems to be vary influential for Ovenbird abundance. The closer the variable appears to tree base of the tree the more influence it has.
+
+## Single covariate
+
+With this new found knowledge, let's fit a parametric (Poisson) linear model using `Decid` as a predictor:
+
+```{r regr-pois2}
+mP1 <- glm(y ~ Decid, data=x, family=poisson)
+mean(x$y)
+mean(fitted(mP0))
+coef(mP1)
+```
+
+Same as before, the mean of the observations equal the mean of the fitted values. But instead of only the intercept, now we have 2 coefficients estimated. Our linear predictor thus looks like:
+$log(\lambda_i) = \beta_0 + \beta_1 x_{1i}$. This means that expected abundance is$e^{\beta_0}$ where `Decid`=0, $e^{\beta_0}e^{\beta_1}$ where `Decid`=1, and $e^{\beta_0+\beta_1 x_{1}}$ in between.
+
+The relationship can be visualized by plotting the fitted values against the predictor, or using the coefficients to make predictions using our formula:
+
+```{r regr-pois2_plot}
+## make a sequence between 0 and 1
+dec <- seq(from=0, to=1, by=0.01)
+## predict lambda
+lam <- exp(coef(mP1)[1] + coef(mP1)[2] * dec)
+
+plot(fitted(mP1) ~ Decid, x, pch=19, col="grey") # fitted
+lines(lam ~ dec, col=2) # our predicted
+rug(x$Decid) # observed x values
+```
+
+The model summary tells us that resudials are not quite right (we would expect 0 median and symmertic tails), in line with residual deviance still being higher than residual degrees of freedom (these should be close if the Poisson assumption holds, but it is much better than what we saw for the null model).
+
+However, we learned something important. The `Decid` effect is significant (meaning that the effect size is large compared to the standard error):
+
+```{r regr-pois2_summary}
+summary(mP1)
+```
+
+Note: we see a significant (<0.05) $P$-value for the intercept as well. It is totally meaningless. That $P$-value relates to the hull hypothesis of the intercept ($\beta_0$) being 0. There is nothing special about that, it is like saying the average abundance is different from 1. But if $\beta_1$ is significantly different from 0, it means that the main effect has non-negligible effect on the mean abundance.
+
+We can compare this model to the null (constant, intercept-only) model:
+
+```{r regr-pois2_aic}
+AIC(mP0, mP1)
+BIC(mP0, mP1)
+model.sel(mP0, mP1)
+R2dev(mP0, mP1)
+```
+
+AIC uses the negative log likelihood and the number of parameters as penalty. Smaller value indicate a model that is closer to the (unknowable) true model (caveat: this statement is true only asymptotically, i.e. it holds for very large
+sample sizes). For small samples, we often use BIC (more penalty for complex models when sample size is small), or AICc (as in `MuMIn::model.sel()`).
+
+The other little table returned by `R2dev()` shows deviance based (quasi) $R^2$ and adjusted $R^2$ for some GLM classes, just for the sake of completeness. The Chi-squared based test indicates good fit when the $p$-value is high (probability of being distributed according the Poisson). 
+
+None of these two models is a particularly good fit in terms
+of the parametric distribution. This, however does not mean these models are useless for making inferential statements about ovenbirds. How useful these statements are, that is another question. Let's dive into confidence and prediction intervals a bit.
+
+```{r regr-pois_pred,cache=TRUE}
+B <- 2000
+alpha <- 0.05
+
+xnew <- data.frame(Decid=seq(0, 1, 0.01))
+CI0 <- predict_sim(mP0, xnew, interval="confidence", level=1-alpha, B=B)
+PI0 <- predict_sim(mP0, xnew, interval="prediction", level=1-alpha, B=B)
+CI1 <- predict_sim(mP1, xnew, interval="confidence", level=1-alpha, B=B)
+PI1 <- predict_sim(mP1, xnew, interval="prediction", level=1-alpha, B=B)
+
+## nominal coverage is 95%
+sum(x$y %[]% predict_sim(mP0, interval="prediction", level=1-alpha, B=B)[,c("lwr", "upr")]) / nrow(x)
+sum(x$y %[]% predict_sim(mP1, interval="prediction", level=1-alpha, B=B)[,c("lwr", "upr")]) / nrow(x)
+```
+
+An estimate is said to have good _coverage_ when the prediction intervals encompass the right amount of the observations. When the nominal level is 95% ($100 \times (1-\alpha)$, where $\alpha$ is Type I. error rate, rejecting a true null hypothesis), we expect 95% of the observations fall within the 95% _prediction interval_. The prediction interval includes the uncertainty around the coefficients (confidence intervals, uncertainty in $\hat{\lambda}$) and the stochasticity coming from the Poisson distribution ($Y_i \sim Poisson(\hat{\lambda})$).
+
+The code above calculate the confidence and prediction intervals for the two models. We also compared the prediction intervals and the nominal levels, and those were quite close (ours being a bit more conservative), hinting that maybe the Poisson distributional assumption is not very bad after all, but we'll come back to this later.
+
+Let's see our confidence and prediction intervals for the two models:
+
+```{r regr-pois_PI}
+yj <- jitter(x$y, 0.5)
+
+plot(yj ~ Decid, x, xlab="Decid", ylab="E[Y]",
+  ylim=c(0, max(PI1$upr)+1), pch=19, col="#bbbbbb33", main="P0 vs P1")
+
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(PI0$lwr, rev(PI0$upr)), border=NA, col="#0000ff44")
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(CI0$lwr, rev(CI0$upr)), border=NA, col="#0000ff44")
+lines(CI0$fit ~ xnew$Decid, lty=1, col=4)
+
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(PI1$lwr, rev(PI1$upr)), border=NA, col="#ff000044")
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(CI1$lwr, rev(CI1$upr)), border=NA, col="#ff000044")
+lines(CI1$fit ~ xnew$Decid, lty=1, col=2)
+
+legend("topleft", bty="n", fill=c("#0000ff44", "#ff000044"), lty=1, col=c(4,2),
+  border=NA, c("Null", "Decid"))
+```
+
+### Exercise
+
+What can we conclude from this plot?
+
+- Coverage is comparable, so what is the difference then?
+- Which model should I use for prediction and why? (Hint: look at the non overlapping regions.)
+- Confidence intervals are super narrow. Is that of any use? What does CI depend on? (Don't read the next question yet!)
+- Is PI expected to change with sample size?
+
+## Additive model
+
+Generalized additive models (GAMs) are semi-parametric, meaning that
+parametric assumptions apply, but responses are modelled more flexibly.
+
+```{r regr-gam}
+mGAM <- mgcv::gam(y ~ s(Decid), x, family=poisson)
+summary(mGAM)
+plot(mGAM)
+```
+
+Compare the 4 predictions we have so far
+
+```{r regr-glm_plots}
+fitCT <- predict(mCT, x[order(x$Decid),])
+fitGAM <- predict(mGAM, xnew, type="response")
+
+plot(yj ~ Decid, x, xlab="Decid", ylab="E[Y]",
+  ylim=c(0, max(PI1$upr)+1), pch=19, col="#bbbbbb33", main="P0")
+lines(CI0$fit ~ xnew$Decid, lty=1, col=1)
+lines(CI1$fit ~ xnew$Decid, lty=1, col=2)
+lines(fitCT ~ x$Decid[order(x$Decid)], lty=1, col=3)
+lines(fitGAM ~ xnew$Decid, lty=1, col=4)
+legend("topleft", bty="n", lty=1, col=1:4,
+  legend=c("Null", "Decid", "ctree", "GAM"))
+```
+
+### Exercise
+
+Play with GAM and other variables to understand response curves: `plot(mgcv::gam(y ~ s(<variable_name>), data=x, family=poisson))`
+
+## Nonlinear terms
+
+We can use polynomial terms to approximate the GAM fit:
+
+```{r regr-pois_poly}
+mP12 <- glm(y ~ Decid + I(Decid^2), data=x, family=poisson)
+mP13 <- glm(y ~ Decid + I(Decid^2) + I(Decid^3), data=x, family=poisson)
+mP14 <- glm(y ~ Decid + I(Decid^2) + I(Decid^3) + I(Decid^4), data=x, family=poisson)
+model.sel(mP1, mP12, mP13, mP14, mGAM)
+```
+
+Not a surprise that the most complex model won. GAM was more complex than that (see `df` column).
+
+```{r regr-pois_poly_plot}
+pr <- cbind(
+  predict(mP1, xnew, type="response"),
+  predict(mP12, xnew, type="response"),
+  predict(mP13, xnew, type="response"),
+  predict(mP14, xnew, type="response"),
+  fitGAM)
+matplot(xnew$Decid, pr, lty=1, type="l",
+  xlab="Decid", ylab="E[Y]")
+legend("topleft", lty=1, col=1:5, bty="n",
+  legend=c("Linear", "Quadratic", "Cubic", "Quartic", "GAM"))
+```
+
+Let's see how these affect our prediction intervals:
+
+```{r regr-pois_poly_pi,cache=TRUE}
+CI12 <- predict_sim(mP12, xnew, interval="confidence", level=1-alpha, B=B)
+PI12 <- predict_sim(mP12, xnew, interval="prediction", level=1-alpha, B=B)
+CI13 <- predict_sim(mP13, xnew, interval="confidence", level=1-alpha, B=B)
+PI13 <- predict_sim(mP13, xnew, interval="prediction", level=1-alpha, B=B)
+CI14 <- predict_sim(mP14, xnew, interval="confidence", level=1-alpha, B=B)
+PI14 <- predict_sim(mP14, xnew, interval="prediction", level=1-alpha, B=B)
+
+op <- par(mfrow=c(2,2))
+plot(yj ~ Decid, x, xlab="Decid", ylab="E[Y]",
+  ylim=c(0, max(PI1$upr)+1), pch=19, col="#bbbbbb33", main="Linear")
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(PI1$lwr, rev(PI1$upr)), border=NA, col="#0000ff44")
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(CI1$lwr, rev(CI1$upr)), border=NA, col="#0000ff88")
+lines(CI1$fit ~ xnew$Decid, lty=1, col=4)
+lines(fitGAM ~ xnew$Decid, lty=2, col=1)
+
+plot(yj ~ Decid, x, xlab="Decid", ylab="E[Y]",
+  ylim=c(0, max(PI1$upr)+1), pch=19, col="#bbbbbb33", main="Quadratic")
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(PI12$lwr, rev(PI12$upr)), border=NA, col="#0000ff44")
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(CI12$lwr, rev(CI12$upr)), border=NA, col="#0000ff88")
+lines(CI12$fit ~ xnew$Decid, lty=1, col=4)
+lines(fitGAM ~ xnew$Decid, lty=2, col=1)
+
+plot(yj ~ Decid, x, xlab="Decid", ylab="E[Y]",
+  ylim=c(0, max(PI1$upr)+1), pch=19, col="#bbbbbb33", main="Cubic")
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(PI13$lwr, rev(PI13$upr)), border=NA, col="#0000ff44")
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(CI13$lwr, rev(CI13$upr)), border=NA, col="#0000ff88")
+lines(CI13$fit ~ xnew$Decid, lty=1, col=4)
+lines(fitGAM ~ xnew$Decid, lty=2, col=1)
+
+plot(yj ~ Decid, x, xlab="Decid", ylab="E[Y]",
+  ylim=c(0, max(PI1$upr)+1), pch=19, col="#bbbbbb33", main="Quartic")
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(PI14$lwr, rev(PI14$upr)), border=NA, col="#0000ff44")
+polygon(c(xnew$Decid, rev(xnew$Decid)),
+  c(CI14$lwr, rev(CI14$upr)), border=NA, col="#0000ff88")
+lines(CI14$fit ~ xnew$Decid, lty=1, col=4)
+lines(fitGAM ~ xnew$Decid, lty=2, col=1)
+par(op)
+```
+
+## Categorical variables
+
+Categorical variables are expanded into a _model matrix_ before parameter estimation. The model matrix usually contains indicator variables for each level (value 1 when factor value equals a particular label, 0 otherwise) except for the _reference category_ (check `relevel` if you want to change the reference category).
+
+The estimate for the reference category comes from the intercept, the rest of the estimates are relative to the reference category. In the log-linear model example this means a ratio.
+
+```{r regr-pois_cat}
+head(model.matrix(~DEC, x))
+mP2 <- glm(y ~ DEC, data=x, family=poisson)
+summary(mP2)
+coef(mP2)
+```
+
+The estimate for a non-deciduous landscape is $e^{\beta_0}$, and it is $e^{\beta_0}e^{\beta_1}$ for deciduous landscapes. (Of course such binary classification at the landscape (1 km$^2$) level doesn't really makes sense for various reasons.)
+
+```{r regr-pois_cat1}
+boxplot(Decid ~ DEC, x)
+model.sel(mP1, mP2)
+R2dev(mP1, mP2)
+```
+
+Having estimates for each land cover type improves the model,
+but the  model using continuous variable is still better
+
+```{r regr-pois_cat2}
+mP3 <- glm(y ~ HAB, data=x, family=poisson)
+summary(mP3)
+
+model.sel(mP1, mP2, mP3)
+R2dev(mP1, mP2, mP3)
+```
+
+The prediction in this case would look like: $log(\lambda_i)=\beta_0 + \sum_{j=1}^{k-1} \beta_j x_{ji}$, where we have $k$ factor levels (and $k-1$ indicator variables besides the intercept).
+
+Here is a general way of calculating fitted values or making predictions based on the design matrix (`X`) and the coefficients (`b`) (column ordering in `X` must match the elements in `b`) given a parametric log-linear model `object` and data frame `df`:
+
+```{r regr-pred_general,eval=FALSE}
+b <- coef(object)
+X <- model.matrix(formula(object), df)
+exp(X %*% b)
+```
+
+## Multiple main effects
+
+We can keep adding variables to the model in a forwards-selection fashion.
+`add1` adds variables one at a time, selecting from the scope defined by the formula:
+
+```{r regr-add1}
+scope <- as.formula(paste("~ FOR + WET + AHF +", paste(cn, collapse="+")))
+tmp <- add1(mP1, scope)
+tmp$AIC_drop <- tmp$AIC-tmp$AIC[1] # current model
+tmp[order(tmp$AIC),]
+```
+
+It looks like `ConifWet` is the best covariate to add next because it leads to the biggest drop in AIC, and both effects are significant.
+
+```{r regr-var2}
+mP4 <- glm(y ~ Decid + ConifWet, data=x, family=poisson)
+summary(mP4)
+```
+
+The `drop1` function is the opposite of `add1`, it assesses which term should
+be dropped from a more saturated model:
+
+```{r regr-var_drop1}
+formula_all <- y ~ Open + Agr + UrbInd + SoftLin + Roads + 
+  Decid + OpenWet + Conif + ConifWet + 
+  OvernightRain + TSSR + DAY + Longitude + Latitude
+
+tmp <- drop1(glm(formula_all, data=x, family=poisson))
+tmp$AIC_drop <- tmp$AIC-tmp$AIC[1] # current model
+tmp[order(tmp$AIC),]
+```
+
+The `step` function can be used to automatically select the best model
+based on adding/dropping terms:
+
+```{r regr-var_all,cache=TRUE}
+mPstep <- step(glm(formula_all, data=x, family=poisson), 
+  trace=0) # use trace=1 to see all the steps
+summary(mPstep)
+```
+
+## Interaction
+
+When we consider interactions between two variables (say $x_1$ and $x_2$), we refer to adding another variable to the model matrix that is a product of the two variables ($x_{12}=x_1 x_2$):
+
+```{r}
+head(model.matrix(~x1 * x2, data.frame(x1=1:4, x2=10:7)))
+```
+
+Let's consider interaction between our two predictors from before:
+
+```{r regr-inter}
+mP5 <- glm(y ~ Decid * ConifWet, data=x, family=poisson)
+summary(mP5)
+model.sel(mP0, mP1, mP4, mP5)
+```
+
+The model with the interaction is best supported, but how do we make sense of this relationship? We can't easily visualize it in a single plot. We can either
+
+1. fix all variables (at their mean/meadian) and see how the response is changing along a single variable: this is called a _conditional_ effect (conditional on fixing other variables), this is what `visreg::visreg()` does
+2. or plot the fitted values against the predictor variable (one at a time), this is called a _marginal_ effect, and this is what `ResourceSelection::mep()` does
+
+```{r regr-visreg2}
+visreg(mP5, scale="response", xvar="ConifWet", by="Decid")
+```
+```{r regr-visreg3,fig.show = 'hold',out.width='33%'}
+mep(mP5)
+```
+
+Let's use GAM to fit a bivariate spline:
+
+```{r regr-GAM2}
+mGAM2 <- mgcv::gam(y ~ s(Decid, ConifWet), data=x, family=poisson)
+plot(mGAM2, scheme=2, rug=FALSE)
+```
+
+Final battle of Poisson models: 
+
+```{r}
+model.sel(mP0, mP1, mP12, mP13, mP14, mP2, mP3, mP4, mP5, mGAM, mGAM2)
+R2dev(mP0, mP1, mP12, mP13, mP14, mP2, mP3, mP4, mP5, mGAM, mGAM2)
+```
+
+Of course, the most complex model wins but the Chi-square test is still significant (indicating lack of fit). Let's try different error distribution.
+
+## Different error distributions
+
+We will use the 2-variable model with interaction:
+
+```{r regr-dist1}
+mP <- glm(y ~ Decid * ConifWet, data=x, family=poisson)
+```
+
+Let us try the Negative Binomial distribution first. This distribution is related to Binomial experiments (number of trials required to get a fixed number of successes given a binomial probability). It can also be derived as a mixture of Poisson and Gamma distributions (see [Wikipedia](https://en.wikipedia.org/wiki/Negative_binomial_distribution#Gamma%E2%80%93Poisson_mixture)), which is a kind of hierarchical model. In this case, the Gamma distribution acts as an i.i.d. random effect for the intercept:
+$Y_i\sim Poisson(\lambda_i)$, $\lambda_i  \sim Gamma(e^{\beta_0+\beta_1 x_{1i}}, \gamma)$, where $\gamma$ is the Gamma variance.
+
+The Negative Binomial variance (using the parametrization common in R functions) is a function of the mean and the scale: $V(\mu) = \mu + \mu^2/\theta$.
+
+```{r regr-dist2}
+mNB <- glm.nb(y ~ Decid * ConifWet, data=x)
+summary(mNB)
+```
+
+Next, we look at zero-inflated models. In this case, the mixture distribution is a Bernoulli distribution and a count distribution (Poisson or Negative Binomial, for example). The 0's can come from both the zero and the count distributions, whereas the >0 values can only come from the count distribution: $A_i \sim Bernoulli(\varphi)$, $Y_i \sim Poisson(A_i \lambda_i)$.
+
+The zero part of the zero-inflated models are often parametrized as probability of zero ($1-\varphi$), as in the `pscl::zeroinfl` function:
+
+```{r regr-dist3}
+## Zero-inflated Poisson
+mZIP <- zeroinfl(y ~ Decid * ConifWet | 1, x, dist="poisson")
+summary(mZIP)
+
+## Zero-inflated Negative Binomial
+mZINB <- zeroinfl(y ~ Decid * ConifWet | 1, x, dist="negbin")
+summary(mZINB)
+```
+
+Now we compare the four different parametric models:
+
+```{r regr-dist4}
+AIC(mP, mNB, mZIP, mZINB)
+```
+
+Our best model is the Zero-inflated Poisson. The probability of observing a zero as part of the zero distribution is back transformed from the zero coefficient using the inverse logit function:
+
+```{r regr-dist5}
+unname(plogis(coef(mZIP, "zero"))) # P of 0
+```
+
+Now we use the scale parameter to visualize the variance functions for the Negative Binomial models (the 1:1 line is the Poisson model):
+
+```{r regr-dist6}
+mNB$theta
+mZINB$theta
+
+mu <- seq(0, 5, 0.01)
+plot(mu, mu + mu^2/mNB$theta, type="l", col=2,
+  ylab=expression(V(mu)), xlab=expression(mu))
+lines(mu, mu + mu^2/mZINB$theta, type="l", col=4)
+abline(0,1, lty=2)
+legend("topleft", bty="n", lty=1, col=c(2,4),
+  legend=paste(c("NB", "ZINB"), round(c(mNB$theta, mZINB$theta), 2)))
+```
+
+## Mixed models
+
+It is also common practice to consider generalized linear mixed models (GLMMs) for count data. These mixed models are usually considered as Poisson-Lognormal mixtures. The simplest, so called i.i.d., case is similar to the Negative Binomial, but instead of Gamma, we have Lognormal distribution: $Y_i\sim Poisson(\lambda_i)$, $log(\lambda_i) = \beta_0+\beta_1 x_{1i}+\epsilon_i$, $\epsilon_i \sim Normal(0, \sigma^2)$, where $\sigma^2$ is the Lognormal variance on the log scale.
+
+We can use the `lme4::glmer` function: use `SiteID` as random effect (we have exactly $n$ random effects).
+
+```{r regr-dist7,cache=TRUE}
+mPLN1 <- glmer(y ~ Decid * ConifWet + (1 | SiteID), data=x, family=poisson)
+summary(mPLN1)
+```
+
+Note: the number of unknowns we have to somehow estimate is now more than the number of observations we have. How is that possible?
+
+Alternatively, we can use `SurveyArea` as a grouping variable. We have now $m < n$ random effects, and survey areas can be seen as larger landscapes within which the sites are clustered: $Y_ij\sim Poisson(\lambda_ij)$, $log(\lambda_ij) = \beta_0+\beta_1 x_{1ij}+\epsilon_i$, $\epsilon_i \sim Normal(0, \sigma^2)$. The index $i$ ($i=1,...,m$) defines the cluster (survey area), the $j$ ($j=1,...,n_i$) defines the sites within survey area $i$ ($n = \sum_{i=1}^m n_i$).
+
+```{r regr-dist8,cache=TRUE}
+mPLN2 <- glmer(y ~ Decid * ConifWet + (1 | SurveyArea), data=x, family=poisson)
+summary(mPLN2)
+```
+
+In the battle of distributions (keeping the linear predictor part the same) the clustered GLMM was best supported:
+
+```{r regr-dist9,cache=TRUE}
+tmp <- AIC(mP, mNB, mZIP, mZINB, mPLN1, mPLN2)
+tmp$delta_AIC <- tmp$AIC - min(tmp$AIC)
+tmp[order(tmp$AIC),]
+```
+
+### Exercise
+
+- How can we interpret these different kinds of overdispersion (zero-inflation and higher than Poisson variance)?
+- What are some of the biological mechanisms that can contribute to the 
+overdispersion?
+- What are some of the biological mechanisms that can lead to the 
+clustered GLMM being the best model?
+
+
+## Count duration effects
+
+Let's change gears a bit now, and steer closer to the main focus of this workshop. We want to account for methodological differences among samples. One aspect of methodologies involve  variation in total counting duration. We'll now inspect what that does to our observations.
+
+First, we create a list of matrices where counts are tabulated by surveys and time intervals for each species:
+
+```{r regr-time1}
+ydur <- Xtab(~ SiteID + Dur + SpeciesID , 
+  josm$counts[josm$counts$DetectType1 != "V",])
+```
+
+The `ydur` object is a list with dientical matrics, one for each species. We use the same species (`spp`) as before
+
+```{r regr-time2-1}
+y <- as.matrix(ydur[[spp]])
+head(y)
+colMeans(y) # mean count of new individuals
+```
+
+Create a data frame including the cumulative counts in the 0-3, 0-5, and 0-10 minutes time intervals
+ 
+```{r regr-time2-2}
+cumsum(colMeans(y)) # cumulative counts
+
+x <- data.frame(
+  josm$surveys, 
+  y3=y[,"0-3min"],
+  y5=y[,"0-3min"]+y[,"3-5min"],
+  y10=rowSums(y))
+
+(tb3 <- table(x$y3))
+(tb5 <- table(x$y5))
+(tb10 <- table(x$y10))
+
+plot(names(tb3), as.numeric(tb3)/sum(tb3), type="l",
+     xlab="Count", ylab="Proportion")
+lines(names(tb5), as.numeric(tb5)/sum(tb5), type="l", col=2)
+lines(names(tb10), as.numeric(tb10)/sum(tb10), type="l", col=4)
+abline(v=mean(x$y3), lty=2)
+abline(v=mean(x$y5), lty=2, col=2)
+abline(v=mean(x$y10), lty=2, col=4)
+legend("topright", bty="n", lty=1, col=c(1,2,4),
+       legend=paste0("0-", c(3, 5, 10), " min"))
+```
+
+If we fit single-predictor GLMs to these 3 responses, we get different fitted values, consistent with our mean counts:
+
+```{r regr-time3}
+m3 <- glm(y3 ~ Decid, data=x, family=poisson)
+m5 <- glm(y5 ~ Decid, data=x, family=poisson)
+m10 <- glm(y10 ~ Decid, data=x, family=poisson)
+mean(fitted(m3))
+mean(fitted(m5))
+mean(fitted(m10))
+```
+
+Using the multiple time interval data, we can pretend that we have a mix of methodologies with respect to count duration:
+
+```{r regr-time4}
+set.seed(1)
+x$meth <- as.factor(sample(c("A", "B", "C"), nrow(x), replace=TRUE))
+x$y <- x$y3
+x$y[x$meth == "B"] <- x$y5[x$meth == "B"]
+x$y[x$meth == "C"] <- x$y10[x$meth == "C"]
+```
+
+We can estimate the effect of the methodology:
+
+```{r regr-time5}
+mm <- glm(y ~ meth - 1, data=x, family=poisson)
+summary(mm)
+boxplot(fitted(mm) ~ meth, x)
+exp(coef(mm))
+```
+
+Or the effect of the continuous predictor and the method (discrete):
+
+```{r regr-time6}
+mm <- glm(y ~ Decid + meth, data=x, family=poisson)
+summary(mm)
+boxplot(fitted(mm) ~ meth, x)
+exp(coef(mm))
+```
+
+The fixed effects adjust the means quite well:
+
+```{r regr-time7}
+cumsum(colMeans(y))
+mean(y[,1]) * c(1, exp(coef(mm))[3:4])
+```
+
+But it is all relative, depends on reference methodology/protocol and the data. As the time increases, it is not guaranteed that the estimates will increase as well -- there can be all kinds off biases and sampling variation that would work against us.
+
+The other problem is, we can't easily extrapolate to a methodology with count duration of 12 minutes, or interpolate to a methodology with count duration of 2 or 8 minutes. We somehow need to express time expediture in minutes to make that work. Let's try something else:
+
+```{r regr-time8}
+x$tmax <- c(3, 5, 10)[as.integer(x$meth)]
+mm <- glm(y ~ Decid + I(log(tmax)), data=x, family=poisson)
+summary(mm)
+tmax <- seq(0, 20, 0.01)
+plot(tmax, exp(log(tmax) * coef(mm)[3]), type="l",
+  ylab="Method effect", col=2)
+```
+
+### Exercise
+
+Now we are getting somewhere. But still, couple of questions come to mind:
+
+- The function keeps increasing monotonically. Why is this an issue?
+- What kind of function would we need instead and why?
+- What is the underlying biological mechanism that we need to model somehow?
+
+## Count radius effects
+
+Before solving the count duration issue, let us look at the effect of survey area. We get a similar count breakdown, but now by distance band:
+
+```{r regr-area1-1}
+ydis <- Xtab(~ SiteID + Dis + SpeciesID , 
+  josm$counts[josm$counts$DetectType1 != "V",])
+
+y <- as.matrix(ydis[[spp]])
+head(y)
+colMeans(y) # mean count of new individuals
+cumsum(colMeans(y)) # cumulative counts
+
+x <- data.frame(
+  josm$surveys, 
+  y50=y[,"0-50m"],
+  y100=y[,"0-50m"]+y[,"50-100m"])
+```
+
+We don't consider the unlimited distance case, because the survey area there is unknown (we will address this problem later).
+
+```{r regr-area1-2}
+(tb50 <- table(x$y50))
+(tb100 <- table(x$y100))
+
+plot(names(tb50), as.numeric(tb50)/sum(tb50), type="l",
+     xlab="Count", ylab="Proportion")
+lines(names(tb100), as.numeric(tb100)/sum(tb100), type="l", col=2)
+abline(v=mean(x$y50), lty=2)
+abline(v=mean(x$y100), lty=2, col=2)
+legend("topright", bty="n", lty=1, col=c(1,2),
+       legend=paste0("0-", c(50, 100), " m"))
+```
+
+We compare the counts within the 0-50 and 0-100 m circles:
+
+```{r regr-area2}
+m50 <- glm(y50 ~ Decid, data=x, family=poisson)
+m100 <- glm(y100 ~ Decid, data=x, family=poisson)
+mean(fitted(m50))
+mean(fitted(m100))
+coef(m50)
+coef(m100)
+```
+
+## Offsets
+
+Offsets are constant terms in the linear predictor, e.g. $log(\lambda_i) = \beta_0 + \beta_1 x_{1i} + o_i$, where $o_i$ is an offset.
+
+In the survey area case, an offset might be the log of area surveyed. Abundance ($N$) is population density ($D$) multiplied by survey area ($A$). The logic for this is based on point processes: intensity is a linear function of area under a homogeneous Poisson point process. So we can say thet $E[Y_i] = N_i = D_i A_i$, thus $log(N_i) = log(D_i) + log(A_i)$ where $o_i = log(A_i)$ is the offset.
+
+Let's see if using area as offset makes our models comparable. Instead of mixing up different survey types, let's see if we can make them identical. We use distance in meters divided by 100, so the population density is estimated in ha.
+
+```{r regr-area3}
+m50 <- glm(y50 ~ Decid, data=x, family=poisson, 
+  offset=rep(log(0.5^2*pi), nrow(x)))
+m100 <- glm(y100 ~ Decid, data=x, family=poisson,
+  offset=rep(log(1^2*pi), nrow(x)))
+coef(m50)
+coef(m100)
+mean(exp(model.matrix(m50) %*% coef(m50)))
+mean(exp(model.matrix(m100) %*% coef(m100)))
+```
+
+These coefficients and mean predictions are much closer to each other, but something else is going on.
+
+We pretend again, that survey area varies in our data set:
+
+```{r regr-area4}
+set.seed(1)
+x$meth <- as.factor(sample(c("A", "B"), nrow(x), replace=TRUE))
+x$y <- x$y50
+x$y[x$meth == "B"] <- x$y100[x$meth == "B"]
+```
+
+Methodology effect:
+
+```{r regr-area5}
+mm <- glm(y ~ meth - 1, data=x, family=poisson)
+summary(mm)
+exp(coef(mm))
+```
+
+Predictor and method effects:
+
+```{r regr-area6}
+mm <- glm(y ~ Decid + meth, data=x, family=poisson)
+summary(mm)
+boxplot(fitted(mm) ~ meth, x)
+exp(coef(mm))
+
+cumsum(colMeans(y))[1:2]
+mean(y[,1]) * c(1, exp(coef(mm))[3])
+```
+
+Use log area as continuous predictor: we would expect a close to 1:1 relationship on the abundance scale.
+
+```{r regr-area7}
+x$logA <- log(ifelse(x$meth == "A", 0.5, 1)^2*pi)
+mm <- glm(y ~ Decid + logA, data=x, family=poisson)
+summary(mm)
+A <- seq(0, 2, 0.01) # in ha
+plot(A, exp(log(A) * coef(mm)[3]), type="l",
+  ylab="Method effect", col=2)
+abline(0, 1, lty=2)
+```
+
+The offset forces the relationship to be 1:1
+(it is like fixing the `logA` coefficient to be 1):
+
+```{r regr-area8}
+mm <- glm(y ~ Decid, data=x, family=poisson, offset=x$logA)
+summary(mm)
+boxplot(fitted(mm) ~ meth, x)
+
+cumsum(colMeans(y))[1:2]
+c(0.5, 1)^2*pi * mean(exp(model.matrix(mm) %*% coef(mm))) # /ha
+```
+
+
+## Prediction with offsets
+
+Predictions using offsets in `glm` can be tricky, because the offset is usually included in the calculation of the expected value.
+
+```{r regr-off}
+mm1 <- glm(y ~ Decid, data=x, family=poisson, offset=x$logA)
+mm2 <- glm(y ~ Decid + offset(logA), data=x, family=poisson)
+mean(fitted(mm1))
+mean(fitted(mm2))
+mean(predict(mm1, type="response"))
+mean(predict(mm2, type="response"))
+mean(exp(model.matrix(mm1) %*% coef(mm1))*exp(x$logA))
+mean(exp(model.matrix(mm2) %*% coef(mm2))*exp(x$logA))
+```
+
+When estimating population density, we often want results to refer to a unit area ($A=1$) that leads to 0 offset ($log(1)=0$), thus we need to make sure it is the case
+
+```{r regr-off}
+mean(exp(model.matrix(mm1) %*% coef(mm1)))
+mean(exp(model.matrix(mm2) %*% coef(mm2)))
+```
+
+The safest way is to use the matrix product (`exp(model.matrix(mm) %*% coef(mm) + <offset>)`). We can often omit the offset, e.g. in the log area case we can express the prediction per unit area. If the unit is 1 ha, as in our case, log(1)=0, which means the mean abundance per unit area can be calculated by omitting the offsets all together.
+
+
+### Exercise
+
+1. When we compared the 0-50 and 0-100 m counts we could not make abundances comparable using log area as an offset. Why?
+2. We got a `logA` coefficient that was less than 1 when we should have gotten 1. Why?
+
+## Outlook
+
+It looks like that our $E[Y]=N=DA$ does not hold.
+
+- There is an issue with survey length,
+- none of the tweaks using area worked as expected.
+
+The best that we can do today is to say thet $E[Y]=DAC$ where $C$ is a correction factor whose value is unknown. Note that $N$ is still our interest, but instead of $E[Y]=N$ we observe a count that is $E[Y] < N$.
+
+The value of $C$ must relate to the time and distance components of the surveys. If that's the case, we can just call the time related part of $C$ as $p$ and the distance related part of $C$ as $q$ ($C=pq$). If somehow we can estimate $p$ and $q$, we can estimate $N$ because $N=DA = E[Y] / pq$.
+
+The basic equation that we will rely on is $E[Y]=DApq=qpAD$, which reads QPAD. If you did not know, now you know why this approach is often referred to as the QPAD approach.
+
+On the next days you will learn how to estimate $p$ from removal sampling and $q$ (and sometimes also $A$) from distance sampling. Once we have a handle on $Apq$, we can estimate $D$ and $N$.
+
+Ultimately, you will learn how to estimate population size.
+
+### Homework
+
+Think about why knowing the absolute population size matters. Why shouldn't we just stop at good old GLM and relative abundance?

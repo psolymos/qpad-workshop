@@ -3,11 +3,6 @@ title: "Organizing and Processing Point Count Data"
 author: "Peter Solymos <solymos@ualberta.ca>"
 ---
 
-```{r setup,include=FALSE}
-options(width=53, scipen=999)
-library(knitr)
-```
-
 ## Preamble
 
 ```{r data-load_josm_data,message=TRUE,warning=FALSE}
@@ -107,9 +102,7 @@ str(d3)
 Xtab(abundance ~ sample + species, d3)
 ```
 
-Now we have the `S3` sample in the cross table.
-The summary is that we need to be careful with filtering.
-We need to check to still have the full list of samples that we expect.
+Now we have the `S3` sample in the cross table. The summary is that we need to be careful with filtering. We need to check to still have the full list of samples that we expect.
 
 ### Exercise
 
@@ -137,16 +130,13 @@ Species info: species codes, common and scientific names. The table could also c
 head(josm$species)
 ```
 
-At the survey level, we have coordinates, date/time info,
-variables capturing survey conditions, and land cover info extracted from 1 km$^2$ resolution rasters.
+At the survey level, we have coordinates, date/time info, variables capturing survey conditions, and land cover info extracted from 1 km$^2$ resolution rasters.
 
 ```{r data-josm_surveys}
 colnames(josm$surveys)
 ```
 
-The count table contains one row for each unique individual 
-of a species (`SpeciesID` links to the species lookup table)
-observed during a survey (`StationID` links to the survey attribute table).
+The count table contains one row for each unique individual of a species (`SpeciesID` links to the species lookup table) observed during a survey (`StationID` links to the survey attribute table).
 
 ```{r data-josm_counts}
 str(josm$counts)
@@ -212,8 +202,7 @@ round(sort(colMeans(ytot)), 4)
 
 ### Joining species data with predictors
 
-Let's join the species counts with the survey attributes. 
-This is how we can prepare the input data for regression analysis.
+Let's join the species counts with the survey attributes. This is how we can prepare the input data for regression analysis.
 
 ```{r data-join}
 spp <- "OVEN" # which species
@@ -256,6 +245,8 @@ col <- colorRampPalette(c("lightgrey", "blue"))(100)
 plot(rr[["Water"]], col=col, axes=FALSE, box=FALSE, legend=FALSE)
 plot(xy$geometry, add=TRUE, pch=19, cex=0.2)
 ## some visible features: Piece River, Athabasca, Lesser Slave Lake
+
+plot(rr, col=hcl.colors(50, "Lajolla"))
 ```
 
 ### Derived variables
@@ -268,10 +259,7 @@ x$AHF <- x$Agr + x$UrbInd + x$Roads # 'alienating' human footprint
 x$WET <- x$OpenWet + x$ConifWet + x$Water # wet + water
 ```
 
-Classify surveys locations based on dominant land cover type:
-this is a shortcut that pays off when it comes to predicting at
-spatial scales different than the scale where proportion info
-is coming from
+Classify surveys locations based on dominant land cover type: this is a shortcut that pays off when it comes to predicting at spatial scales different than the scale where proportion info is coming from
 
 ```{r data-deriv2}
 ## define column names
@@ -283,9 +271,7 @@ summary(rowSums(x[,cn]))
 corrplot::corrplot(cor(x[,cn]), "ellipse")
 ```
 
-The `find_max()` function finds the maximum value in each row,
-the output containes the value and the column where it was found,
-which is exactly the info we need
+The `find_max()` function finds the maximum value in each row, the output containes the value and the column where it was found, which is exactly the info we need
 
 ```{r data-deriv3}
 h <- find_max(x[,cn])
@@ -294,11 +280,7 @@ table(h$index)
 x$HAB <- droplevels(h$index) # drop empty levels
 ```
 
-We can use the value to exclude sites that do not contain
-at least a certain proportion of the dominant land cover type (e.g. <25%),
-or we can use this info to assign less weight to such "contaminated" sites 
-(i.e. the dominant land cover is contaminated by other cover types).
-Finding dominant land cover is is more meaningful at smaller spacial scales.
+We can use the value to exclude sites that do not contain at least a certain proportion of the dominant land cover type (e.g. <25%), or we can use this info to assign less weight to such "contaminated" sites (i.e. the dominant land cover is contaminated by other cover types). Finding dominant land cover is is more meaningful at smaller spacial scales.
 
 ### Exercise
 
