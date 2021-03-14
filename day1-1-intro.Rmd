@@ -15,10 +15,6 @@ output:
 ```{r setup,include=FALSE}
 options(width=53, scipen=999)
 library(knitr)
-opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
 ```
 
 # Housekeeping
@@ -86,7 +82,7 @@ Day 3
 Day 4
 
 - Putting it all together
-- Understanding roadside surveys
+- Roadside surveys
 
 ***
 

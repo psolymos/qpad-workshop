@@ -791,7 +791,7 @@ mean(exp(model.matrix(mm2) %*% coef(mm2))*exp(x$logA))
 
 When estimating population density, we often want results to refer to a unit area ($A=1$) that leads to 0 offset ($log(1)=0$), thus we need to make sure it is the case
 
-```{r regr-off}
+```{r regr-off2}
 mean(exp(model.matrix(mm1) %*% coef(mm1)))
 mean(exp(model.matrix(mm2) %*% coef(mm2)))
 ```

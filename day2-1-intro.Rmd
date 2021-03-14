@@ -1,0 +1,272 @@
+---
+title: "Introduction"
+date: "Point count data analysis workshop, BIOS2 2021, March 16-25"
+author: "Peter Solymos"
+fontsize: 11pt
+urlcolor: blue
+output:
+  beamer_presentation:
+    theme: "Singapore"
+    incremental: false
+    includes:
+      in_header: preamble.tex
+---
+
+```{r setup,include=FALSE}
+options(width=53, scipen=999)
+library(knitr)
+```
+
+# Outline
+
+Day 1
+
+- ~~Introduction~~
+- ~~We need to talk about data~~
+- ~~A primer in regression techniques~~
+
+Day 2
+
+- Behavioral complexities
+
+Day 3
+
+- The detection process
+- Dealing with recordings
+
+Day 4
+
+- Putting it all together
+- Roadside surveys
+
+***
+
+# Where were we?
+
+$E[Y]=NC=DAC=DApq$
+
+***
+
+# What is detectability?
+
+In the most colloquial terms, $\delta$ is the probability
+that a species is detected given it is present:
+
+$$P(Y>0 \mid N>0)$$
+
+***
+
+# Occupancy
+
+In an occupancy framework, we can have:
+
+- A detection: true positives (false positive rate is 0)
+  - $P(Y>0) = P(Y>0 \mid N>0) P(N>0) + P(Y>0 \mid N=0) P(N=0)$
+  - $P(Y>0) = \delta \varphi + 0 (1-\varphi) = \delta \varphi$
+- A non-detection: false negatives + true negatives
+  - $P(Y=0) = P(Y=0 \mid N>0) P(N>0) + P(Y=0 \mid N=0) P(N=0)$
+  - $P(Y=0) = (1-\delta) \varphi + 1 (1-\varphi) = 1- \delta \varphi$,
+
+(These are the marginal probabilities used to estimate the parameters using maximum likelihood.)
+
+***
+
+# Side note on occupancy
+
+People often confuse these two conditional probabilities:
+
+1. Observing 0 given that the species is present:
+  - $P(Y=0 \mid N>0) = 1-\delta$
+2. Presence of a species given that we observe 0 (we ask this question _after_ observing the data):
+  - $P(N> 0 \mid Y=0) = \frac{P(Y=0 \mid N>0) P(N>0)}{P(Y=0)}$
+  - $\frac{(1-\delta)\varphi}{\varphi (1-\delta) + (1-\varphi)} = \frac{\varphi (1-\delta)}{1-\delta \varphi}$
+
+***
+
+# Abundance
+
+A lot more combinations of true abundance and observed counts:
+
+|   | $Y$ = 0  |  1 | 2  |  ... |
+|---|---|---|---|---|
+|  $N$ = 0 | x  |   |   |   |
+|  1 |  x | x  |   |   |
+| 2  |  x | x  |  x |   |
+| ...  | x  | x  | x  | x  |
+
+***
+
+# Estimating detectability
+
+To estimate $\delta$, we need:
+
+- ancillary information (multiple visits, distance bands, time intervals, multiple observers),
+- parametric model assumptions (i.e. $\delta$ varies across locations).
+
+***
+
+# The myth of constant detectability
+
+Detectability zealots often view a method that cannot estimate
+constant detection probability $\delta$ 
+(e.g. single-visit occupancy and N-mixture models) as inferior.
+
+Fortunately for the rest of us: $\delta$ can only be constant
+in very narrow situations, e.g. when surveys are conducted:
+
+- in the same region,
+- in similar habitat,
+- in the same year,
+- on the same day,
+- at the same time,
+- by the same observer,
+- using the same protocol.
+
+***
+
+# Constant detectability is rare
+
+Often a consequence of small sample size (i.e.
+not a lot of detection for a species)[^1][^2]:
+
+\centering
+```{r echo=FALSE,out.width="400px",fig.show = 'hold',out.width='48%'}
+include_graphics("../images/qpad_tab1.png")
+include_graphics("../images/solymos-2018-condor-table-1.png")
+```
+
+[^1]: Solymos et al. 2013, [Methods. Ecol. Evol. 4:1047--1058](http://dx.doi.org/10.1111/2041-210X.12106).
+[^2]: Solymos et al. 2018, [Condor 120:765--786](http://dx.doi.org/10.1650/CONDOR-18-32.1).
+
+***
+
+# Let's unwrap $\delta$
+
+1. Once the species/individual is present ($N>0$),
+2. it needs to make itself heard/visible, make itself available ($p$) -- we have just discussed this,
+3. then it needs to be detected by an observer (either in the field or in the lab listening to a recording) -- let's call this probability $q$.
+
+These imply a set total time duration and maximum counting radius.
+
+***
+
+# QPAD
+
+Now we can expand our equation:
+$E[Y]=NC=(AD)(pq)=qpAD$
+
+The expected value of the observed count becomes a function of the:
+
+- population density ($D$),
+- area sampled ($A$),
+- availability ($p$),
+- and perceptibility ($q$).
+
+***
+
+# Space and time to the rescue
+
+\centering
+```{r echo=FALSE,out.width="190px"}
+include_graphics("../images/qpad_fig2.png")
+```
+
+$p$ is a monotonic function of _time_, while $q$ is monotonic function of _area_ (space).
+
+***
+
+# Availability varies
+
+\centering
+```{r echo=FALSE,out.width="300px"}
+include_graphics("../images/qpad_fig3.png")
+```
+
+***
+
+# Availability really varies
+
+\centering
+```{r echo=FALSE,out.width="200px"}
+include_graphics("../images/solymos-2018-condor-fig-5.png")
+```
+
+***
+
+# Biological mechanisms
+
+- Migration timing drives phenology for many species, e.g. ordinal day of year (`DAY`),
+- when study spans across biomes, use time since local spring (multi-year average),
+- or time since spring green up, last snow day, etc. based on actual survey year,
+- time of day,
+- time since local sunrise (`TSSR`).
+
+***
+
+# Perceptibility varies too
+
+\centering
+```{r echo=FALSE,out.width="300px"}
+include_graphics("../images/qpad_fig4.png")
+```
+
+***
+
+# Estimating nuisance variables
+
+We have discussed how to estimate $p$.
+
+Next we will discuss how to estimate $q$ based on distance sampling.
+
+***
+
+# So why is this important?
+
+$$E[Y]=NC=(AD)(pq)=qpAD$$
+$$\hat{D}=E[Y]/(A\hat{p}\hat{q})$$
+
+***
+
+# Corrections
+
+\centering
+```{r echo=FALSE,out.width="300px"}
+include_graphics("../images/qpad_fig5.png")
+```
+
+The corrections can be used to adjust for different methodologies
+and other factors influencing availability and detectability.
+
+***
+
+# Ovenbird
+
+\centering
+```{r echo=FALSE,out.width="300px"}
+include_graphics("../images/qpad_fig6.png")
+```
+
+Density estimates using different corrections in 5 types of land cover
+
+***
+
+# Integrating projects
+
+1. Normalize and join data from projects,
+2. take multiple-duration subset and fit removal models,
+3. take multiple-distance subset and fit distance sampling models,
+4. predict $p$ and $g$ for all surveys,
+5. use $log(Apq)$ offsets in log-linear models with total counts as response.
+
+Removal and distance models can deal with multiple methodologies in the same model.
+
+Each modeling step can include covariates, which can be the same.
+
+***
+
+# Advantages of this approach
+
+- Smaller parameter space,
+- less colinearity,
+- straightforward model selection,
+- quicker than joint modeling via integrated likelihood.

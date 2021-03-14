@@ -7,10 +7,6 @@ author: "Peter Solymos <solymos@ualberta.ca>"
 
 ## Censored Poisson data as detection/non-detection
 
-```{r}
-x$y01 <- ifelse(x$y > 0, 1, 0)
-table(x$y, x$y01)
-```
 
 $W$ is random variable based on $Y > 0$, that follows a Bernoulli distribution with probability $p$: $W=I_{(Y>0)}$, $W \mid p \sim Bernoulli(p)$, $W \in (0,1)$. 
 The Bernoulli probability mass function is defined as:
@@ -24,7 +20,23 @@ Based on the equivalence, $p=1-e^{-\lambda}$, a Binomial GLM with the complement
 $1-p=e^{-\lambda}$, $log(1-p)={-\lambda}$, $-log(1-p)=e^\mu=\lambda$, $log(-log(1-p))=X^T\hat{\beta}=\mu=log(\lambda)$, where $X^T\hat{\beta}$ is the linear predictor.
 
 ```{r}
-#mP <- glm(y ~ Decid * ConifWet, data=x, family=poisson)
+library(mefa4)             # data manipulation
+load("data/josm-data.rda") # JOSM data
+
+ytot <- Xtab(~ SiteID + SpeciesID, josm$counts[josm$counts$DetectType1 != "V",])
+sort(colMeans(ytot))
+
+#spp <- "OVEN"
+spp <- "BOCH" # works better for species with lower mean counts
+
+x <- data.frame(
+  josm$surveys, 
+  y=ytot[rownames(josm$surveys), spp])
+
+x$y01 <- ifelse(x$y > 0, 1, 0)
+table(x$y, x$y01)
+
+mP <- glm(y ~ Decid * ConifWet, data=x, family=poisson)
 mB <- glm(y01 ~ Decid * ConifWet, data=x, family=binomial("cloglog"))
 cbind(Poisson=coef(mP), cloglog=coef(mB))
 
