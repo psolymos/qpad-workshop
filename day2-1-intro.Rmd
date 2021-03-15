@@ -41,6 +41,29 @@ Day 4
 
 ***
 
+# Get course materials
+
+1. Visit [https://github.com/psolymos/qpad-workshop/releases](https://github.com/psolymos/qpad-workshop/releases)
+2. Download the latest release into a __NEW__ folder
+3. Extract the zip/tar.gz archive
+4. Open the `workshop.Rproj` file in RStudio (or open any other R GUI/console and `setwd()` to the directory where you downloaded the file)
+5. Move your __LOCAL__ files into the new folder to keep things together
+
+***
+
+# Local copy
+
+Avoid conflicts as we update the workshop materials: work in a __LOCAL__ copy of the R markdown files
+
+```{r eval=FALSE}
+source("src/functions.R")
+qpad_local(day=2)
+```
+
+LOCAL copies will not be tracked and overwritten by git. You can copy new files over and it will not impact your local copies.
+
+***
+
 # What is detectability?
 
 In the most colloquial terms, $\delta$ is the probability

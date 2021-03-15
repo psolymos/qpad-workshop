@@ -6,6 +6,10 @@ author: "Peter Solymos <solymos@ualberta.ca>"
 ## Preamble
 
 ```{r data-load_josm_data,message=TRUE,warning=FALSE}
+## mace a local copy of day 1 files
+source("src/functions.R")
+qpad_local(day=1)
+
 library(mefa4)                # data manipulation
 load("data/josm-data.rda")    # load bird data
 ```

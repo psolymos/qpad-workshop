@@ -107,6 +107,19 @@ source(
 
 ***
 
+# Local copy
+
+Avoid conflicts as we update the workshop materials: work in a __LOCAL__ copy of the R markdown files
+
+```{r eval=FALSE}
+source("src/functions.R")
+qpad_local(day=1)
+```
+
+LOCAL copies will not be tracked and overwritten by git. You can copy new files over and it will not impact your local copies.
+
+***
+
 # Apples and oranges
 
 _"A comparison of apples and oranges occurs when two items or groups of items are compared that 
