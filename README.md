@@ -22,7 +22,7 @@ The expected outcome of the course is a solid foundation for further professiona
 
 > Note: this outline is preliminary and subject to change.
 
-Each day will consist of 3 sessions, roughly one hour each, with short break in between.
+Each day will consist of 3 sessions, roughly one hour each, with short breaks in between.
 
 | Session | Topic | Files |
 | --- | --- | :---: |
@@ -81,6 +81,16 @@ If you want to use git: fork or clone the repository
 cd into/your/dir
 git clone https://github.com/psolymos/qpad-workshop.git
 ```
+
+To avoid conflicts as we update the workshop material: work in a LOCAL copy of the R markdown files
+
+```R
+source("src/functions.R")
+qpad_local(day=1)
+```
+
+LOCAL copies will not be tracked and overwritten by git.
+
 
 ## After the course
 

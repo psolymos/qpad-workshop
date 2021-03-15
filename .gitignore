@@ -49,3 +49,5 @@ temp
 *.log
 
 _dump*
+
+LOCAL*

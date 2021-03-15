@@ -1,3 +1,14 @@
+#' local file management to avoid overriding user changes
+qpad_local <- function(day) {
+  day <- match.arg(as.character(day), as.character(1:4))
+  lf <- list.files()
+  fin <- lf[startsWith(lf, paste0("day", day)) & endsWith(lf, ".Rmd")]
+  fout <- paste0("LOCAL-", z)
+  file.copy(from=fin, to=fout, overwrite=FALSE)
+  cat("\nFiles copied: work in your LOCAL copies\n\n")
+  invisible(NULL)
+}
+
 #' Simulation based confidence nad prediction intervals for LM/GLM
 predict_sim <-
 function(object, newdata=NULL,
