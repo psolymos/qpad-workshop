@@ -73,7 +73,7 @@ mP0$family$linkinv
 
 Inspect the summary
 
-```{regs-pois2}
+```{regr-pois2}
 summary(mP0)
 ```
 
@@ -353,7 +353,7 @@ R2dev(mP1, mP2, mP3)
 
 The prediction in this case would look like: $log(\lambda_i)=\beta_0 + \sum_{j=1}^{k-1} \beta_j x_{ji}$, where we have $k$ factor levels (and $k-1$ indicator variables besides the intercept).
 
-Here is a general way of calculating fitted values or making predictions based on the design matrix (`X`) and the coefficients (`b`) (column ordering in `X` must match the elements in `b`) given a parametric log-linear model `object` and data frame `df`:
+Here is a general way of calculating fitted values or making predictions based on the design matrix (`X`) and the coefficients (`b`) (column ordering in `X` must match the elements in `b`) given a parametric log-linear model `object` and data frame `df` (the code won't run as is, `object` is just a placeholder for your GLM model object):
 
 ```{r regr-pred_general,eval=FALSE}
 b <- coef(object)

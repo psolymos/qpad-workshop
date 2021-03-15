@@ -45,3 +45,25 @@ mean(fitted(mB))
 mean(exp(model.matrix(mB) %*% coef(mB)))
 ```
 
+
+## Ideas from Juan
+
+1) Package gratia has very nice gam evaluation and visualization tools
+```
+devtools::install_github('gavinsimpson/gratia') 
+appraise(model_object) # residuals and fit
+draw(model_object) # marginal effects (response curves)
+```
+
+2) Package randomForest allows for a quick and (more) intuitive insight for exploration of variable importance; it is a bit hard to see from the regression tree embebbed in the code
+
+```
+# the model formula
+model <- count ~ cov1 + cov 2 + ... + covN
+# fit the RF model
+model_fit  <- randomForest(model, data=data, ntree = 1000, importance=T)
+importance(model_fit) # variable importance summary 
+plot(model_fit) # nice var importance plot
+```
+
+
