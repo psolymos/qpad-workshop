@@ -1,5 +1,5 @@
 ---
-title: "Introduction"
+title: "Introduction, Day 2"
 date: "Point count data analysis workshop, BIOS2 2021, March 16-25"
 author: "Peter Solymos"
 fontsize: 11pt
@@ -38,12 +38,6 @@ Day 4
 
 - Putting it all together
 - Roadside surveys
-
-***
-
-# Where were we?
-
-$E[Y]=NC=DAC=DApq$
 
 ***
 
@@ -131,8 +125,8 @@ not a lot of detection for a species)[^1][^2]:
 
 \centering
 ```{r echo=FALSE,out.width="400px",fig.show = 'hold',out.width='48%'}
-include_graphics("../images/qpad_tab1.png")
-include_graphics("../images/solymos-2018-condor-table-1.png")
+include_graphics("images/qpad_tab1.jpg")
+include_graphics("images/solymos-2018-condor-table-1.png")
 ```
 
 [^1]: Solymos et al. 2013, [Methods. Ecol. Evol. 4:1047--1058](http://dx.doi.org/10.1111/2041-210X.12106).
@@ -140,13 +134,59 @@ include_graphics("../images/solymos-2018-condor-table-1.png")
 
 ***
 
+# Availability varies
+
+\centering
+```{r echo=FALSE,out.width="300px"}
+include_graphics("images/qpad_fig3.jpg")
+```
+
+***
+
+# Availability really varies
+
+\centering
+```{r echo=FALSE,out.width="200px"}
+include_graphics("images/solymos-2018-condor-fig-5.png")
+```
+
+***
+
+# Biological mechanisms
+
+- Migration timing drives phenology for many species, e.g. ordinal day of year (`DAY`),
+- when study spans across biomes, use time since local spring (multi-year average),
+- or time since spring green up, last snow day, etc. based on actual survey year,
+- time of day,
+- time since local sunrise (`TSSR`).
+
+***
+
+# Perceptibility varies too
+
+\centering
+```{r echo=FALSE,out.width="300px"}
+include_graphics("images/qpad_fig4.jpg")
+```
+
+***
+
+# Physical mechanisms
+
+- Trees block the transmission of sound
+- Broad leaves rustle more
+- Louder sounds travel farther
+- Low frequency sounds travel farther
+
+***
+
 # Let's unwrap $\delta$
 
-1. Once the species/individual is present ($N>0$),
-2. it needs to make itself heard/visible, make itself available ($p$) -- we have just discussed this,
-3. then it needs to be detected by an observer (either in the field or in the lab listening to a recording) -- let's call this probability $q$.
+1. Once the species/individual is present ($N>0$)
+2. It needs to signal its presence: make itself heard/visible, make itself available ($p$),
+3. Then the signal needs to be received by a sensor: human ear or a microphone (and then the human ear in the lab listening to a recording), perceptibility $q$
 
-These imply a set total time duration and maximum counting radius.
+These imply a pre-defined total time duration and maximum counting radius.
 
 ***
 
@@ -168,105 +208,148 @@ The expected value of the observed count becomes a function of the:
 
 \centering
 ```{r echo=FALSE,out.width="190px"}
-include_graphics("../images/qpad_fig2.png")
+include_graphics("images/qpad_fig2.jpg")
 ```
 
 $p$ is a monotonic function of _time_, while $q$ is monotonic function of _area_ (space).
 
 ***
 
-# Availability varies
+# Simulate QPAD
 
-\centering
-```{r echo=FALSE,out.width="300px"}
-include_graphics("../images/qpad_fig3.png")
+```{r sim-pois}
+D <- 2.0  # inds / unit area
+A <- 1.0  # area
+p <- 0.8  # availability
+q <- 0.5  # perceptibility
+
+n <- 100  # sample size
+N <- rpois(n, lambda = A * D)
+Y <- rbinom(n, size = N, prob = p * q)
 ```
 
 ***
 
-# Availability really varies
+# Output
 
-\centering
-```{r echo=FALSE,out.width="200px"}
-include_graphics("../images/solymos-2018-condor-fig-5.png")
+```{r sim-pois2}
+table(N=N, Y=Y)
 ```
 
 ***
 
-# Biological mechanisms
+# The model
 
-- Migration timing drives phenology for many species, e.g. ordinal day of year (`DAY`),
-- when study spans across biomes, use time since local spring (multi-year average),
-- or time since spring green up, last snow day, etc. based on actual survey year,
-- time of day,
-- time since local sunrise (`TSSR`).
+- $(N \mid D,A) \sim Poisson(DA)$
+- $(Y \mid N,p,q) \sim Binomial(N, pq)$.
+
+Incorporates key components of reality, but also ignores a lot of details.
 
 ***
 
-# Perceptibility varies too
+# Assumptions
+
+- Observations are independent
+- $Y$ involves no double counting
+- Area is known and measured without error
+- Detectability ($pq$) is independent of $N$
+
+And a lot more that we'll cover later
+
+***
+
+# Why do we need simulation
+
+Probabilistic simulation is useful to test how well a stat method is working _if_ the assumptions are met.
+
+It is not quite as useful for assessing how robust the method is when the assumptions are _not_ met.
+
+You need to link to biological mechanisms to do sensitivity analysis.
+
+***
+
+# bSims goals
+
+- Allow easy __testing of statistical assumptions__ and explore effects of violating these assumptions
+- __Aid survey design__ by comparing different options
+- And most importantly, to __have fun__ while doing it via an intuitive and interactive user interface
+
+***
+
+# bSims design
+
+- __Isolation__: the spatial scale is small (local point count scale) so that we can treat individual landscapes as more or less homogeneous units (but see below how certain stratified designs and edge effects can be incorporated) and independent in space and time
+- __Realism__: the implementation of biological mechanisms and observation processes are realistic, defaults are chosen to reflect common practice and assumptions
+- __Efficiency__: implementation is computationally efficient utilizing parallel computing backends when available
+- __Extensibility__: the package functionality is well documented and easily extensible
+
+***
+
+# bSims verbs
+
+- __Initialize__ (`bsims_init`): the landscape is defined by the extent and possible habitat stratification
+- __Populate__ (`bsims_populate`): the population of finite number of individuals within the extent of the landscape
+- __Animate__ (`bsims_animate`): individual behaviours described by movement and vocalization events, i.e. the frequency of sending various types of signals
+- __Detect__ (`bsims_detect`): the physical side of the observation process, i.e. transmitting and receiving the signal
+- __Transcribe__ (`bsims_transcribe`): the "human" aspect of the observation process, i.e. the perception of the received signal
+
+***
+
+# Behavioral events
+
+Event time ($T$) is a continuous random variable
+
+In the simplest case, its probability density function is the Exponential
+distribution: $f(t)=\phi e^{-t\phi}$
+
+The corresponding cumulative distribution function is:
+$F(t)=\int_{0}^{t} f(t)dt=1-e^{-t\phi}=p_t$, the probability that the event has occurred by duration $t$
+
+The parameter $\phi$ is the rate of the Exponential distribution
+with mean $1/\phi$ and variance $1/\phi^2$.
+
+***
+
+# Survival and hazard function
+
+The complement of $F(t)$ CDF is called the _survival function_ ($S(t)=1-F(t)$, $S(0)=1$), which gives the probability that the event has _not_ occurred by duration $t$.
+
+The _hazard function_ ($\lambda(t)=f(t)/S(t)$) defines the instantaneous rate of occurrence of the event (_risk_, the density of events at $t$ divided by the probability of surviving).
+
+The cumulative hazard (cumulative risk) is the sum of the risks between duration 0 and $t$ ($\Lambda(t)=\int_{0}^{t} \lambda(t)dt$).
+
+***
+
+# Exponential model
+
+The simplest survival distribution assumes constant risk over time ($\lambda(t)=\phi$), which corresponds to the Exponential distribution.
+
+The Exponential distribution also happens to describe the lengths of the 
+inter-event times in a homogeneous Poisson process 
+(events are independent, it is a 'memory-less' process).
+
+***
+
+# Exponential model visualized
 
 \centering
-```{r echo=FALSE,out.width="300px"}
-include_graphics("../images/qpad_fig4.png")
+```{r beh-events,message=FALSE,warning=FALSE,echo=FALSE,fig.width=6,fig.height=4.5}
+library(bSims)
+set.seed(321)
+l <- bsims_init()
+p <- bsims_populate(l, density = 0.5)
+e1 <- bsims_animate(p, vocal_rate = 1)
+
+plot(get_events(e1))
+curve((1-exp(-1*x)) * get_abundance(e1), col=2, add=TRUE)
 ```
 
 ***
 
-# Estimating nuisance variables
+# Zoom in on mechanisms
 
-We have discussed how to estimate $p$.
+Today we are focusing on availability, $p \in (0, 1)$
 
-Next we will discuss how to estimate $q$ based on distance sampling.
+We assume that peceptibility is $q=1$
 
-***
 
-# So why is this important?
-
-$$E[Y]=NC=(AD)(pq)=qpAD$$
-$$\hat{D}=E[Y]/(A\hat{p}\hat{q})$$
-
-***
-
-# Corrections
-
-\centering
-```{r echo=FALSE,out.width="300px"}
-include_graphics("../images/qpad_fig5.png")
-```
-
-The corrections can be used to adjust for different methodologies
-and other factors influencing availability and detectability.
-
-***
-
-# Ovenbird
-
-\centering
-```{r echo=FALSE,out.width="300px"}
-include_graphics("../images/qpad_fig6.png")
-```
-
-Density estimates using different corrections in 5 types of land cover
-
-***
-
-# Integrating projects
-
-1. Normalize and join data from projects,
-2. take multiple-duration subset and fit removal models,
-3. take multiple-distance subset and fit distance sampling models,
-4. predict $p$ and $g$ for all surveys,
-5. use $log(Apq)$ offsets in log-linear models with total counts as response.
-
-Removal and distance models can deal with multiple methodologies in the same model.
-
-Each modeling step can include covariates, which can be the same.
-
-***
-
-# Advantages of this approach
-
-- Smaller parameter space,
-- less colinearity,
-- straightforward model selection,
-- quicker than joint modeling via integrated likelihood.

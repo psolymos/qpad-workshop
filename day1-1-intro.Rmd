@@ -1,5 +1,5 @@
 ---
-title: "Introduction"
+title: "Introduction, Day 1"
 date: "Point count data analysis workshop, BIOS2 2021, March 16-25"
 author: "Peter Solymos"
 fontsize: 11pt

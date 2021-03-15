@@ -1,0 +1,101 @@
+---
+title: "Introduction"
+date: "Point count data analysis workshop, BIOS2 2021, March 16-25"
+author: "Peter Solymos"
+fontsize: 11pt
+urlcolor: blue
+output:
+  beamer_presentation:
+    theme: "Singapore"
+    incremental: false
+    includes:
+      in_header: preamble.tex
+---
+
+```{r setup,include=FALSE}
+options(width=53, scipen=999)
+library(knitr)
+```
+
+# Outline
+
+Day 1
+
+- ~~Introduction~~
+- ~~We need to talk about data~~
+- ~~A primer in regression techniques~~
+
+Day 2
+
+- ~~Behavioral complexities~~
+
+Day 3
+
+- The detection process
+- Dealing with recordings
+
+Day 4
+
+- Putting it all together
+- Roadside surveys
+
+***
+
+# Estimating nuisance variables
+
+We have discussed how to estimate $p$.
+
+Next we will discuss how to estimate $q$ based on distance sampling.
+
+***
+
+# So why is this important?
+
+$$E[Y]=NC=(AD)(pq)=qpAD$$
+$$\hat{D}=E[Y]/(A\hat{p}\hat{q})$$
+
+***
+
+# Corrections
+
+\centering
+```{r echo=FALSE,out.width="300px"}
+include_graphics("../images/qpad_fig5.png")
+```
+
+The corrections can be used to adjust for different methodologies
+and other factors influencing availability and detectability.
+
+***
+
+# Ovenbird
+
+\centering
+```{r echo=FALSE,out.width="300px"}
+include_graphics("../images/qpad_fig6.png")
+```
+
+Density estimates using different corrections in 5 types of land cover
+
+***
+
+# Integrating projects
+
+1. Normalize and join data from projects,
+2. take multiple-duration subset and fit removal models,
+3. take multiple-distance subset and fit distance sampling models,
+4. predict $p$ and $g$ for all surveys,
+5. use $log(Apq)$ offsets in log-linear models with total counts as response.
+
+Removal and distance models can deal with multiple methodologies in the same model.
+
+Each modeling step can include covariates, which can be the same.
+
+***
+
+# Advantages of this approach
+
+- Smaller parameter space,
+- less colinearity,
+- straightforward model selection,
+- quicker than joint modeling via integrated likelihood.
