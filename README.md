@@ -31,8 +31,8 @@ Each day will consist of 3 sessions, roughly one hour each, with short break in 
 |  |  2. Organizing point count data |  [Notes](day1-2-data-processing.Rmd)  |
 |  |  3. Regression techniques  |  [Notes](day1-3-regression.Rmd)  |
 | **Day 2** |  **Behavioral complexities**  |    |
-|  |  1. Statistical assumptions and nuisance variables  |  Slides  |
-|  |  2. Removal modeling techniques  |  Notes  |
+|  |  1. Statistical assumptions and nuisance variables  |  [Slides](day2-1-intro.pdf)  |
+|  |  2. Removal modeling techniques  |  [Notes](day2-2-behavior.Rmd)  |
 | **Day 3** |  **The detection process** |    |
 |  |  1. Distance sampling |    |
 |  |  2. Calibrating population density  |    |
