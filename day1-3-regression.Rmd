@@ -73,7 +73,7 @@ mP0$family$linkinv
 
 Inspect the summary
 
-```{regr-pois2}
+```{r regr-pois2}
 summary(mP0)
 ```
 
@@ -114,7 +114,7 @@ With this new found knowledge, let's fit a parametric (Poisson) linear model usi
 ```{r regr-pois2}
 mP1 <- glm(y ~ Decid, data=x, family=poisson)
 mean(x$y)
-mean(fitted(mP0))
+mean(fitted(mP1))
 coef(mP1)
 ```
 
