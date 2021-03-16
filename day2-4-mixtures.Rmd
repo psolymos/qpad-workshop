@@ -1,0 +1,398 @@
+---
+title: "Finite Mixture Models"
+author: "Peter Solymos <solymos@ualberta.ca>"
+---
+
+```{r beh-libs,message=TRUE,warning=FALSE}
+library(bSims)              # simulations
+library(detect)             # multinomial models
+load("data/josm-data.rda")  # JOSM data
+set.seed(1)
+```
+
+```{r eval=FALSE}
+## data analysis from day2-3 file
+yall <- Xtab(~ SiteID + Dur + SpeciesID, 
+  josm$counts[josm$counts$DetectType1 != "V",])
+yall <- yall[sapply(yall, function(z) sum(rowSums(z) > 0)) > 100]
+
+spp <- "TEWA"
+Y <- as.matrix(yall[[spp]])
+D <- matrix(c(3, 5, 10), nrow(Y), 3, byrow=TRUE,
+  dimnames=dimnames(Y))
+X <- josm$surveys[rownames(Y), c("DAY", "TSSR")]
+n <- 100
+DAY <- seq(min(X$DAY), max(X$DAY), length.out=n+1)
+TSSR <- seq(min(X$TSSR), max(X$TSSR), length.out=n+1)
+Duration <- seq(0, 10, length.out=n)
+col <- colorRampPalette(c("red", "yellow", "blue"))(n)
+
+Me0 <- cmulti(Y | D ~ 1, type="rem")
+Me1 <- cmulti(Y | D ~ DAY, X, type="rem")
+Me2 <- cmulti(Y | D ~ TSSR, X, type="rem")
+```
+
+Let's relax the assumption that all individuals vocalize at the same rate. We can think about this as different groups in the population. The individuals within the groups have homogenerous rates, but the group level rates are different. We can introduce such heterogeneity into our bSims world by specifying the group level rates (`phi` vector) and the proportion of individuals belonging to the groups (`mix`).
+
+```{r}
+phi <- c(10, 0.5)
+mix <- c(0.25, 0.75)
+
+l <- bsims_init(extent=10)
+(a2 <- bsims_populate(l, density=1)) # increase density
+(b2 <- bsims_animate(a2, vocal_rate=phi, mixture=mix))
+b2$vocal_rate
+```
+
+If we plot the time to first detection data, we can see how expected distribution (red) is different from the fitted Exponential distribution assuming homogeneity:
+
+```{r}
+v <- get_events(b2)
+v1 <- v[!duplicated(v$i),]
+(phi_hat <- fitdistr(v1$t, "exponential")$estimate)
+
+hist(v1$t, xlab="Time of first detection (min)", freq=FALSE, main="", 
+  col="lightgrey", ylab="f(t)")
+curve(mix[1]*dexp(x, phi[1])+mix[2]*dexp(x, phi[2]), add=TRUE, col=2)
+curve(dexp(x, phi_hat), add=TRUE, col=4)
+legend("topright", bty="n", lty=1, col=c(2,4), 
+  legend=c("Expected (mixture)", "Estimated (exponential)"))
+```
+
+Now let's visualize the corresponding cumulative distribution function:
+
+```{r}
+br <- 1:10
+i <- cut(v1$t, c(0, br), include.lowest = TRUE)
+table(i)
+
+plot(stepfun(v1$t, (0:nrow(v1))/nrow(v1)), do.points=FALSE, xlim=c(0,10),
+  xlab="Time of first detection (min)", ylab="F(t)", main="")
+curve(1-mix[2]*exp(-phi[2]*x), add=TRUE, col=2)
+curve(1-exp(-phi_hat*x), add=TRUE, col=4)
+lines(stepfun(br, c(0, cumsum(table(i))/sum(table(i)))), col=3)
+legend("bottomright", bty="n", lty=c(1,1,1,1), col=c(1,2,4,3), 
+  legend=c("Empirical", "Expected (mixture)", "Estimated (exponential)", "Binned"))
+```
+
+We use the `detect::cmulti` function to fit the finite mixture model:
+
+```{r}
+(y <- matrix(as.numeric(table(i)), nrow=1))
+(d <- matrix(br, nrow=1))
+cf <- cmulti.fit(y, d, type="fmix")$coef # log.phi, logit.c
+
+cbind(True=c(phi=phi[2], c=mix[2]),
+  Removal=c(phi_hat=exp(cf[1]), c_hat=plogis(cf[2])))
+```
+
+### Time-invariant finite mixture removal model
+
+The removal model can accommodate behavioral heterogeneity in singing by subdividing the sampled population for a species at a given point into a finite mixture of birds with low and high singing rates, which requires the additional estimation of the proportion of birds in the sampled population with low singing rates.
+
+In the continuous-time formulation of the finite mixture (or two-point mixture) removal model, the cumulative density function during a point count is given by $p(t_{iJ}) = (1 - c) 1 + c (1 - e^{-t_{iJ} \phi}) = 1 - c e^{-t_{iJ} \phi}$, where $\phi$ is the singing rate for the group of infrequently singing birds, and $c$ is the proportion of birds during the point count that are infrequent singers. The remaining proportions ($1 - c$; the intercept of the cumulative density function) of the frequent singers are assumed to be detected instantaneously at the start of the first time interval. In the simplest form of the finite mixture model, the proportion and singing rate of birds that sing infrequently is homogeneous across all times and locations (model `Mf0`). We are using the `type = "fmix"` for finite mixture removal models.
+
+Have a look at the real bird data set:
+
+```{r}
+Mf0 <- cmulti(Y | D ~ 1, type="fmix")
+summary(Mf0)
+cf_Mf0 <- coef(Mf0)
+
+curve(1-plogis(cf_Mf0[2]) * exp(-x*exp(cf_Mf0[1])), 
+  xlim=c(0, 10), ylim=c(0, 1), col=4, main=paste(spp, "Mf0"),
+  xlab="Duration (min)", ylab=expression(p(t[J])))
+lines(stepfun(D[1,], c(0, cumsum(colSums(Y))/sum(Y))), col=3)
+```
+
+### Time-varying finite mixture removal models
+
+Previously, researchers have applied covariate effects on the parameter $\phi_{i}$ of the finite mixture model, similarly to how we modeled these effects in conventional models. This model assumes that the parameter $c$ is constant irrespective of time and location (i.e. only the infrequent singer group changes its singing behavior).
+
+We can fit finite mixture models with `DAY` and `TSSR` as covariates on $\phi$. In this case $p(t_{iJ}) = 1 - c e^{-t_{iJ} \phi_{i}}$ and $log(\phi_{i}) = \beta_{0} + \sum^{K}_{k=1} \beta_{k} x_{ik}$ is the linear predictor with $K$ covariates and the corresponding unknown coefficients ($\beta_{k}$, $k = 0,\ldots, K$).
+
+```{r}
+Mf1 <- cmulti(Y | D ~ DAY, X, type="fmix")
+Mf2 <- cmulti(Y | D ~ TSSR, X, type="fmix")
+```
+
+Compare the three finite mixture models based on AIC and inspect the summary for the best supported model:
+
+```{r}
+Mf_AIC <- AIC(Mf0, Mf1, Mf2)
+Mf_AIC$delta_AIC <- Mf_AIC$AIC - min(Mf_AIC$AIC)
+
+Mf_Best <- get(rownames(Mf_AIC)[Mf_AIC$delta_AIC == 0])
+Mf_AIC[order(Mf_AIC$AIC),]
+
+summary(Mf_Best)
+```
+
+We produce a similar plot as before.
+
+```{r}
+b <- coef(Mf_Best)
+
+op <- par(mfrow=c(1,2))
+p1 <- 1-plogis(b[3])*exp(-3*exp(b[1]+b[2]*DAY))
+plot(DAY, p1, ylim=c(0,1), type="n",
+    main=paste(spp, rownames(Mf_AIC)[Mf_AIC$delta_AIC == 0]),
+    ylab="P(availability)")
+for (i in seq_len(n)) {
+    lines(DAY[c(i,i+1)], p1[c(i,i+1)], col=col[i], lwd=2)
+}
+abline(h=range(p1), col="grey")
+
+plot(Duration, Duration, type="n", ylim=c(0,1),
+    ylab="P(availability)")
+for (i in seq_len(n)) {
+    p2 <- 1-plogis(b[3])*exp(-Duration*exp(b[1]+b[2]*DAY[i]))
+    lines(Duration, p2, col=col[i])
+}
+abline(v=3, h=range(p1), col="grey")
+par(op)
+```
+
+An alternative parametrization is that $c_{i}$ rather than $\phi$ be the time-varying parameter, allowing the individuals to switch between the frequent and infrequent group depending on covariates. We can fit this class of finite mixture model with `DAY` and `TSSR` as covariates on $c$ using `type = "mix"` (instead of `"fmix"`). In this case $p(t_{iJ}) = 1 - c_{i} e^{-t_{iJ} \phi}$ and $logit(c_{i}) = \beta_{0} + \sum^{K}_{k=1} \beta_{k} x_{ik}$ is the linear predictor with $K$ covariates and the corresponding unknown coefficients ($\beta_{k}$, $k = 0,\ldots, K$). Because $c_{i}$ is a proportion, we model it on the logit scale.
+
+```{r}
+Mm1 <- cmulti(Y | D ~ DAY, X, type="mix")
+Mm2 <- cmulti(Y | D ~ TSSR, X, type="mix")
+```
+
+We did not fit a null model for this parametrization, because it is identical to the `Mf0` model, so that model `Mf0` is what we use to compare AIC values and inspect the summary for the best supported model:
+
+```{r}
+Mm_AIC <- AIC(Mf0, Mm1, Mm2)
+Mm_AIC$delta_AIC <- Mm_AIC$AIC - min(Mm_AIC$AIC)
+
+Mm_Best <- get(rownames(Mm_AIC)[Mm_AIC$delta_AIC == 0])
+Mm_AIC[order(Mm_AIC$AIC),]
+
+summary(Mm_Best)
+```
+
+We produce a similar plot as before:
+
+```{r}
+b <- coef(Mm_Best)
+
+op <- par(mfrow=c(1,2))
+p1 <- 1-plogis(b[2]+b[3]*DAY)*exp(-3*exp(b[1]))
+plot(DAY, p1, ylim=c(0,1), type="n",
+    main=paste(spp, rownames(Mm_AIC)[Mm_AIC$delta_AIC == 0]),
+    ylab="P(availability)")
+for (i in seq_len(n)) {
+    lines(DAY[c(i,i+1)], p1[c(i,i+1)], col=col[i], lwd=2)
+}
+abline(h=range(p1), col="grey")
+
+plot(Duration, Duration, type="n", ylim=c(0,1),
+    ylab="P(availability)")
+for (i in seq_len(n)) {
+    p2 <- 1-plogis(b[2]+b[3]*DAY[i])*exp(-Duration*exp(b[1]))
+    lines(Duration, p2, col=col[i])
+}
+abline(v=3, h=range(p1), col="grey")
+par(op)
+```
+
+## Let the best model win
+
+So which of the 3 parametrizations proved to be best for our data? It was the finite mixture with time-varying proportion of infrequent singers. Second was the other finite mixture model, while the conventional model was lagging behind.
+
+```{r}
+M_AIC <- AIC(Me0, Me1, Me2, Mf0, Mf1, Mf2, Mm1, Mm2)
+M_AIC$delta_AIC <- M_AIC$AIC - min(M_AIC$AIC)
+M_AIC[order(M_AIC$AIC),]
+```
+
+
+Finite mixture models provide some really nice insight into how singing behavior changes over time and, due to more parameters, they provide a better fit and thus minimize bias in population size estimates. But all this improvement comes with a price: sample size requirements (or more precisely, the number of detections required) are really high. To have all the benefits with reduced variance, one needs about 1000 non-zero observations to fit finite mixture models, 20 times more than needed to reliably fit conventional removal models. This is much higher than previously suggested minimum sample sizes.
+
+Our findings also indicate that lengthening the count duration from 3 minutes to 5--10 minutes is an important consideration when designing field surveys to increase the accuracy and precision of population estimates. Well-informed survey design combined with various forms of removal sampling are useful in accounting for availability bias in point counts, thereby improving population estimates, and allowing for better integration of disparate studies at larger spatial scales.
+
+We also need to realize that eventually the maximum duration is what we use to estimate $p$ to account for availability bias, which is less impacted by the initial shape of the curve when max duration is longer (5-10 mins). However, if the data set is dominated by shorter (3-min) counts, the biases might affect population size estimates more.
+
+### Exercise
+
+Compare different durations, numbers and lengths of time intervals when estimating vocalization rates.
+
+Estimate vocalization rates for other species (e.g. rare species, specias with less frequent vocalizations). 
+
+Compare linear and polynomial `DAY` effects for migratory and resident species (e.g. BCCH, BOCH, BRCR, CORA, GRAJ, RBNU).
+
+
+
+
+
+
+
+## Estimating abundance
+
+Let us use the bSims approach to see how well we can estimate abundance after accounting for availability. We set `Den` as density ($D$), and because area is $A$ = 100 ha by default, the expected value of the abundance ($\lambda$) becomes $AD$, while the actual abundance ($N$) is a realization of that based on Poisson distribution ($N \sim Poisson(\lambda)$):
+
+```{r}
+phi <- 0.5
+Den <- 1
+
+set.seed(1)
+l <- bsims_init()
+a <- bsims_populate(l, density=Den)
+(b <- bsims_animate(a, vocal_rate=phi, move_rate=0))
+```
+
+The next function we use is `bsims_transcribe` which takes the events data and bins it according to time intervals, `tint` defines the end times of each interval. If we skip the detection layer, everything will be detected
+
+```{r}
+tint <- c(1, 2, 3, 4, 5)
+(tr <- bsims_transcribe(b, tint=tint))
+tr$removal # binned new individuals
+(Y <- sum(tr$removal)) # detected in 0-3 min
+```
+
+After `max(tint)` duration, we detected $Y$ individuals.
+Because $E[Y] = NC$, we only have to estimate the correction factor $C$,
+that happens to be $C=p$ in this case because our bSims world
+ignored the observation process so far. $p$ is estimated based on $\phi$:
+
+```{r}
+fit <- cmulti.fit(tr$removal, matrix(tint, nrow=1), type="rem")
+c(true=phi, estimate=exp(fit$coef))
+```
+
+Visualize our estimates
+
+```{r}
+tt <- seq(0, 10, 0.01)
+plot(tt, 1-exp(-tt*phi), type="l", ylim=c(0, 1),
+  ylab="P(availability)", xlab="Duration", lty=2)
+lines(tt, 1-exp(-tt*exp(fit$coef)))
+for (i in seq_len(length(tint))) {
+  ii <- c(0, tint)[c(i, i+1)]
+  ss <- tt >= ii[1] & tt <= ii[2]
+  xi <- tt[ss]
+  yi <- 1-exp(-xi*exp(fit$coef))
+  polygon(c(xi, xi[length(xi)]), c(yi, yi[1]),
+    border=NA, col="#0000ff33")
+}
+legend("bottomright", bty="n", lty=c(2, 1, NA), 
+  fill=c(NA, NA, "#0000ff33"), border=NA, 
+  legend=c("True", "Estimated", "'New individuals'"))
+```
+
+$p$ is calculated based on the cumulative density function at `max(tint)`
+
+```{r}
+(p <- 1-exp(-max(tint)*exp(fit$coef)))
+```
+
+Our estimate of $N$ becomes $Y/C=Y/p$:
+
+```{r}
+N <- sum(a$abundance)
+Nhat <- Y/p
+c(true=N, estimate=Nhat)
+```
+
+In this case, area is known, so density becomes:
+
+```{r}
+A <- sum(a$area)
+c(true=N / A, estimate=Nhat / A)
+```
+
+Do this for the real data set and use our `Best` model:
+
+```{r}
+spp <- "TEWA"
+
+Y <- as.matrix(yall[[spp]])
+D <- matrix(c(3, 5, 10), nrow(Y), 3, byrow=TRUE,
+  dimnames=dimnames(Y))
+X <- josm$surveys[rownames(Y), c("DAY", "TSSR")]
+
+Best <- get(rownames(M_AIC)[M_AIC$delta_AIC == 0])
+summary(Best)
+```
+
+In this case, availability varies due to `DAY`.
+Our estimate of $N_i$ becomes $Y_i/C_i=Y_i/p_i$:
+
+```{r}
+p <- 1 - plogis(model.matrix(Best) %*% coef(Best)[-1]) *
+  exp(-10 * exp(coef(Best)[1]))
+summary(p)
+```
+
+We can now calculate mean abundance, where `ytot` tallies up the counts
+across the 3 time intervals:
+
+```{r}
+ytot <- rowSums(Y)
+table(ytot)
+mean(ytot / p)
+```
+
+Alternatively, we can fit a GLM and use `log(p)` as an offset:
+
+```{r}
+mod <- glm(ytot ~ 1, family=poisson, offset=log(p))
+summary(mod)
+```
+
+The GLM based estimate comes from the intercept, because
+$E[Y_i]=N_i C_i$ is equivalent to $\lambda_i=e^{\beta_0} e^{o_i}$,
+this $\hat{N_i}=e^{\hat{\beta_0}}$:
+
+```{r}
+exp(coef(mod))
+```
+
+This result tells us mean abundance after correcting for availability bias, but we don't know what area was effectively sampled, and detection of individuals given availability is probably less than 1 because this happens to be a real data set and it is guaranteed that humans in the forest cannot detect birds that are very far (say > 500 m away).
+
+We'll address these problems next week. Let's just circle back to the assumptions.
+
+
+
+
+
+## Further issues
+
+Stratify the landscape, habitat related behavior (mixture)
+
+## Time to 1st detection info
+
+ARU, lots of hits, not always clear how many inds in recording
+Use tt1 (use the ABMI SM data set)
+
+## Methodological diffs
+
+ARU vs human on p
+
+## Std data ove time
+
+TSSR/ JDAY effects, but migration?
+
+## bSims/Shiny
+
+We can collect all our settings into a `bsims_all` call
+
+```{r}
+xall <- bsims_all(
+  extent=10,
+  road=0.25, edge=0.5,
+  density=c(1, 1, 0),
+  vocal_rate=phi,
+  move_rate=1, movement=0.2,
+  tau=tau,
+  tint=tbr, rint=rbr)
+xall
+```
+
+This call does not evaluate the expression, but it creates a 'closure' with all the info inside to create independent realizations (i.e. none of the layers will match across the runs)
+
+```{r}
+xall$new()
+```
+

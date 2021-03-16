@@ -1,679 +1,216 @@
-# Behavioral Complexities {#behavior}
+---
+title: "Behavioral Complexities"
+author: "Peter Solymos <solymos@ualberta.ca>"
+---
 
 ## Introduction
 
-We have reviewed so far how to fit _naive_ models to estimate
-the expected value of the observed counts, $\lambda$.
-So what is this $\lambda$?
-Here are some deifinitions for further discussion:
+We have reviewed so far how to fit _naive_ models to estimate the expected value of the observed counts, $\lambda$. So what is this $\lambda$? Here are some definitions for further discussion:
 
 - **relative abundance**: $\lambda$ without any reference to nuisance variables, but possibly standardized by design, or nuisance variables used as fixed effects,
 - **abundance**: $N=\lambda/C$, $C$ is a correction factor and $N$ refers to the number of individuals within the area surveyed -- the problem is that we cannot measure this directly (this is a latent variable), moreover the survey area is also often unknown (i.e. for unlimited distance counts),
 - **occupancy**: the probability that the survey area is occupied, this is really equivalent to the indicator function $N>0$,
 - **density** $D = N/A = \lambda/AC$, abundance per unit area -- same problems as above: $N$ and sometimes $A$ are unknowns.
 
-Our objective in the following chapters is to work out the details of 
-estimating abundance and density in some clever ways through
-learning about the nature of the mechanisms contributing to $C$.
+Our objective in the following chapters is to work out the details of estimating abundance and density in some clever ways through learning about the nature of the mechanisms contributing to $C$.
 
 ## Prerequisites
 
 ```{r beh-libs,message=TRUE,warning=FALSE}
-library(bSims)                # simulations
-library(detect)               # multinomial models
-load("_data/josm/josm.rda")   # JOSM data
-```
+## mace a local copy of day 2 files
+source("src/functions.R")
+qpad_local(day=2)
 
-## Birds in the forest
+## update bSims - some issues fixed
+#remotes::install_github("psolymos/bSims")
 
-Build a landscape: extent is given in 100 m units
-
-```{r}
-(l <- bsims_init(extent=10))
-```
-
-```{r fig.width=8,fig.height=8}
-plot(l)
-```
-
-We have a 100 ha landscape that we populate with birds,
-1 bird / ha using a Poisson spatial point process.
-As a result, we have $N$ birds in the landscape,
-$N \sim Poisson(\lambda)$, $\lambda = DA$:
-
-```{r}
+library(bSims)              # simulations
+library(detect)             # multinomial models
+load("data/josm-data.rda")  # JOSM data
 set.seed(1)
-(a <- bsims_populate(l, density=0.5))
 ```
 
-```{r fig.width=8,fig.height=8}
-plot(a)
-```
+Just spend a bit of time admiring the package startup messages... 
 
-The locations can be seen as nest locations (`a$nests` stores the locations). 
-But birds don't just stay put in one place. They move and vocalize:
+## Simulations
 
-```{r}
-(b <- bsims_animate(a, 
-  vocal_rate=0.5, duration=10,
-  move_rate=1, movement=0.25))
-```
+The conditionally independent _layers_ of a **bSims** realization are the following, with the corresponding function:
 
-```{r fig.width=8,fig.height=8}
-plot(b)
-```
+1. landscape (`bsims_init`),
+2. population (`bsims_populate`),
+3. behavior with movement and vocalization events (`bsims_animate`),
+4. the physical side of the observation process (`bsims_detect`), and
+5. the human aspect of the observation process (`bsims_transcribe`).
 
-The `get_events` function, as the name implies, extracts the events: 
-movements (`$v` is 0) and vocalizations (`$v` is 1) alike, 
-unless filtered for vocalization events only.
-Besides the coordinates, we also have the time of event (`$t`) and
-the individual identifier (`$i` linking to the rows of the `b$nests` table):
+See this example as a sneak peek that we'll explain in the following subsections:
 
-```{r}
-e <- get_events(b, event_type="both")
-head(e)
-v <- get_events(b, event_type="vocal")
-head(v)
-```
+```{r intro,fig.width=12,fig.height=8,out.width='100%'}
+phi <- 0.5                 # singing rate
+tau <- 1:3                 # detection distances by strata
+tbr <- c(3, 5, 10)         # time intervals
+rbr <- c(0.5, 1, 1.5)      # count radii
 
+l <- bsims_init(extent=10, # landscape
+  road=0.25, edge=0.5)
+p <- bsims_populate(l,     # population
+  density=c(1, 1, 0))
+e <- bsims_animate(p,      # events
+  vocal_rate=phi,
+  move_rate=1, movement=0.2)
+d <- bsims_detect(e,       # detections
+  tau=tau)
+x <- bsims_transcribe(d,   # transcription
+  tint=tbr, rint=rbr)
 
-## Survival model
+get_table(x, "removal") # removal table
+get_table(x, "visits")  # visits table
 
-Survival models assess time-to-event data which is often censored
-(some event has not occurred at the time the data collection ended).
-
-Event time ($T$) is a continuous random variable.
-In the simplest case, its probability density function is the Exponential
-distribution: $f(t)=\phi e^{-t\phi}$.
-The corresponding cumulative distribution function is:
-$F(t)=\int_{0}^{t} f(t)dt=1-e^{-t\phi}$,
-giving the probability that the event has occurred by duration $t$ and we will refer to
-this probability as $p_t$. The parameter $\phi$ is the rate of the Exponential distribution
-with mean $1/\phi$ and variance $1/\phi^2$.
-
-In survival model, the complement of $F(t)$ is called the 
-_survival function_ ($S(t)=1-F(t)$, $S(0)=1$),
-which gives the probability that the event has not occurred by duration $t$.
-The the _hazard function_ ($\lambda(t)=f(t)/S(t)$) 
-which defines the instantaneous rate of occurrence of the event
-(the density of events at $t$ divided by the probability of surviving).
-The cumulative hazard (cumulative risk) the sum of the risks between doration 0 and $t$
-($\Lambda(t)=\int_{0}^{t} \lambda(t)dt$).
-
-The simplest survival distribution assumes constant risk over time ($\lambda(t)=\phi$),
-which corresponds to the Exponential distribution.
-The Exponential distribution also happens to describe the lengths of the 
-inter-event times in a homogeneous Poisson process (events are independent, 'memory-less' process).
-
-## Vocalization events
-
-Event times in our bSims example follow a Poisson process with rate $\phi$ (`vocal_rate`)
-within `duration` $t=10$ minutes.
-
-Let's subset the vocalization events to include the time of first detections
-for each individual (`v1`). The estimated rate should match our setting,
-the plot shows the Exponential probability density function on top of
-the event times:
-
-```{r}
-v1 <- v[!duplicated(v$i),]
-
-tmp <- v1
-tmp$o <- seq_len(nrow(v1))
-plot(o ~ t, tmp, type="n", ylab="Individuals",
-  main="Vocalization events", 
-  ylim=c(1, nrow(b$nests)), xlim=c(0,10))
-for (i in tmp$o) {
-  tmp2 <- v[v$i == v1$i[i],]
-  lines(c(tmp2$t[1], 10), c(i,i), col="grey")
-  points(tmp2$t, rep(i, nrow(tmp2)), cex=0.5)
-  points(tmp2$t[1], i, pch=19, cex=0.5)
-}
-```
-
-```{r}
-(phi <- b$vocal_rate[1])
-(phi_hat <- fitdistr(v1$t, "exponential")$estimate)
-
-hist(v1$t, xlab="Time of first detection (min)", freq=FALSE, main="", 
-  col="lightgrey", ylab="f(t)")
-curve(dexp(x, phi), add=TRUE, col=2)
-curve(dexp(x, phi_hat), add=TRUE, col=4)
-legend("topright", bty="n", lty=1, col=c(2,4), 
-  legend=c("Expected", "Estimated"))
-```
-
-Now let's visualize the corresponding cumulative distribution function.
-We also bin the events into time intervals defined by interval end times
-in the vector `br` (breaks to be used with `cut`):
-
-```{r}
-br <- c(3, 5, 10)
-i <- cut(v1$t, c(0, br), include.lowest = TRUE)
-table(i)
-
-plot(stepfun(v1$t, (0:nrow(v1))/nrow(v1)), do.points=FALSE, xlim=c(0,10),
-  xlab="Time of first detection (min)", ylab="F(t)", main="")
-curve(1-exp(-phi*x), add=TRUE, col=2)
-curve(1-exp(-phi_hat*x), add=TRUE, col=4)
-legend("bottomright", bty="n", lty=c(1,1,1,NA), 
-  col=c(1,2,4,3), pch=c(NA,NA,NA,21),
-  legend=c("Empirical", "Expected", "Estimated", "Binned"))
-points(br, cumsum(table(i))/sum(table(i)), cex=2, col=3, pch=21)
-```
-
-## Removal model
-
-The time-removal model, originally developed for estimating wildlife and fish abundances from mark-recapture studies, was later reformulated for avian surveys with the goal of improving estimates of bird abundance by accounting for the availability bias inherent in point-count data. The removal model applied to point-count surveys estimates the probability that a bird is available for detection as a function of the average number of detectable cues that an individual bird gives per minute (singing rate, $\phi$), and the known count duration ($t$).
-
-Time-removal models are based on a removal experiment whereby animals are trapped and thereby removed from the closed population of animals being sampled. When applying a removal model to avian point-count surveys, the counts of singing birds ($Y_{ij}, \ldots, Y_{iJ}$) within a given point-count survey $i$ ($i  = 1,\ldots, n$) are tallied relative to when each bird is first detected in multiple and consecutive time intervals, with the survey start time $t_{i0} = 0$, the end times of the time intervals $t_{ij}$ ($j = 1, 2,\ldots, J$), and the total count duration of the survey $$t_{iJ}$$. We count each individual bird once, so individuals are 'mentally removed' from a closed population of undetected birds by the surveyor.
-
-The continuous-time formulation of the removal model is identical to the Exponential survival model
-formulation with respect to the cumulative density function, which defines probability of 
-availability for sampling given the occurrence of the species.
-The response variable in the removal model follows multinomial distribution
-with cell probabilities derived from the cumulative probability function.
-
-We will use the `detect::cmulti` function to fit multinomial models using
-conditional maximum likelihood procedure (the conditioning means that we only use
-observations where the total count is not 0, i.e. the species was present).
-The `Y` matrix lists the number of new individuals counted in each time interval,
-the `D` matrix gives the interval end times.
-(We use the `detect::cmulti.fit` function to be able to fit the model to a single survey.)
-
-```{r}
-(y <- matrix(as.numeric(table(i)), nrow=1))
-(d <- matrix(br, nrow=1))
-(phi_hat1 <- exp(cmulti.fit(y, d, type="rem")$coef))
-phi # setting
-phi_hat # from time-to-event data
-```
-
-### Real data
-
-Let's pick a species from the JOSM data set.
-For predictors, we will use a variable capturing date (`DAY`; standardized ordinal day of the year) 
-and an other one capturing time of day (`TSSR`; time since local sunrise).
-The data frame `X` contains the predictors. 
-The matrix `Y` contains the counts of newly counted individuals binned into consecutive time intervals: 
-cell values are the $Y_{ij}$'s. The `D` object is another matrix mirroring the structure of `Y`
-but instead of counts, it contains the interval end times: cell values are
-the $t_{ij}$'s.
-
-```{r}
-yall <- Xtab(~ SiteID + Dur + SpeciesID, 
-  josm$counts[josm$counts$DetectType1 != "V",])
-yall <- yall[sapply(yall, function(z) sum(rowSums(z) > 0)) > 100]
-
-spp <- "TEWA"
-
-Y <- as.matrix(yall[[spp]])
-D <- matrix(c(3, 5, 10), nrow(Y), 3, byrow=TRUE,
-  dimnames=dimnames(Y))
-X <- josm$surveys[rownames(Y), c("DAY", "TSSR")]
-head(Y[rowSums(Y) > 0,])
-head(D)
-summary(X)
-```
-
-
-The `D` matrix can take different methodologies for each row.
-The leftover values in each row must be filled with `NA`s
-and the pattern of `NA`s must match between the `Y` and `D` matrices
-(i.e. you should't have observation in a non-existing time interval).
-Integrating data becomes really easy this way, for example:
-
-```{r}
-matrix(c(3, 5, 10, NA, NA, 1:5, 4, 8, NA, NA, NA), 3, byrow=TRUE)
-```
-
-### Time-invariant conventional model
-
-Time-invariant means that the rate is constant over time
-(i.e. no difference between morning and midnight),
-while conventional refers to the assumption
-that all individuals share the same rate
-(their behaviour is identical in this regard).
-
-In the time-invariant conventional removal model (`Me0`), 
-the individuals of a species at a given location and time are assumed to be homogeneous 
-in their singing rates. 
-The time to first detection follows the Exponential distribution, 
-and the cumulative density function of times to first detection in time interval 
-(0, $t_{iJ}$) gives us the probability that a bird sings at least once during the point count as 
-$p(t_{iJ}) = 1 - exp(-t_{iJ} \phi)$.
-
-We fit this model by specifying intercep-only in the
-right hand side of the formula, and `type="rem"`
-as part of the `cmulti` call:
-
-```{r}
-Me0 <- cmulti(Y | D ~ 1, type="rem")
-summary(Me0)
-(phi_Me0 <- exp(coef(Me0)))
-
-curve(1-exp(-x*phi_Me0), xlim=c(0, 10), ylim=c(0, 1), col=4,
-  xlab="Duration (min)", ylab=expression(p(t[J])), 
-  main=paste(spp, "Me0"))
-points(D[1,], cumsum(colSums(Y))/sum(Y), cex=2, col=3, pch=21)
-```
-
-### Time-varying conventional removal model
-
-Singing rates of birds vary with time of day, time of year, breeding status, and stage of the nesting cycle. 
-Thus, removal model estimates of availability may be improved by accounting for variation in singing rates
-using covariates for day of year and time of day. 
-In this case $p(t_{iJ}) = 1 - e^{-t_{iJ} \phi_{i}}$ and $log(\phi_{i}) = \beta_{0} + \sum^{K}_{k=1} \beta_{k} x_{ik}$ is the linear predictor with $K$ covariates and the corresponding unknown coefficients ($\beta_{k}$, $k = 0,\ldots, K$).
-
-Let's fit a couple of time-varying models using `DAY` and `TSSR` as covariates:
-```{r beh-Me,cache=TRUE}
-Me1 <- cmulti(Y | D ~ DAY, X, type="rem")
-Me2 <- cmulti(Y | D ~ TSSR, X, type="rem")
-```
-
-Now compare the three conventional models based on AIC and inspect the summary for the best supported model with the `JDAY` effect.
-
-```{r}
-Me_AIC <- AIC(Me0, Me1, Me2)
-Me_AIC$delta_AIC <- Me_AIC$AIC - min(Me_AIC$AIC)
-Me_AIC[order(Me_AIC$AIC),]
-
-Me_Best <- get(rownames(Me_AIC)[Me_AIC$delta_AIC == 0])
-summary(Me_Best)
-```
-
-To visually capture the time-varying effects, we make some plots using base graphics, 
-colors matching the time-varying predictor. This way we can not only assess how availability 
-probability (given a fixed time interval) is changing with the values of the predictor, 
-but also how the cumulative distribution changes with time.
-
-```{r}
-b <- coef(Me_Best)
-
-n <- 100
-DAY <- seq(min(X$DAY), max(X$DAY), length.out=n+1)
-TSSR <- seq(min(X$TSSR), max(X$TSSR), length.out=n+1)
-Duration <- seq(0, 10, length.out=n)
-col <- colorRampPalette(c("red", "yellow", "blue"))(n)
-
-op <- par(mfrow=c(1,2))
-p1 <- 1-exp(-3*exp(b[1]+b[2]*DAY))
-plot(DAY, p1, ylim=c(0,1), type="n",
-    main=paste(spp, rownames(Me_AIC)[Me_AIC$delta_AIC == 0]),
-    ylab="P(availability)")
-for (i in seq_len(n)) {
-    lines(DAY[c(i,i+1)], p1[c(i,i+1)], col=col[i], lwd=2)
-}
-abline(h=range(p1), col="grey")
-
-plot(Duration, Duration, type="n", ylim=c(0,1),
-    ylab="P(availability)")
-for (i in seq_len(n)) {
-    p2 <- 1-exp(-Duration*exp(b[1]+b[2]*DAY[i]))
-    lines(Duration, p2, col=col[i])
-}
-abline(v=3, h=range(p1), col="grey")
+op <- par(mfrow=c(2,3), cex.main=2)
+plot(l, main="Initialize")
+plot(p, main="Populate")
+plot(e, main="Animate")
+plot(d, main="Detect")
+plot(x, main="Transcribe")
 par(op)
 ```
 
-## Finite mixtures
+The layers allow us to fix some of the layers and simulate multiple realizations conditional on these fixed layers, e.g. fix the landscape and population layers and only change the behavior, etc.
 
-Let's relax the assumption that all individuals vocalize at the same rate.
-We can think about this as different groups in the population.
-The individuals within the groups have homogenerous rates,
-but the group level rates are different.
-We can introduce such heterogeneity into our bSims world by
-specifying the group level rates (`phi` vector) and the
-proportion of individuals belonging to the groups (`mix`).
+### Landscape
 
+The `bsims_ini` function sets up the geometry of a local landscape. The `extent` of the landscape determines the edge lengths of a square shaped area. With no argument values passed, the function assumes a homogeneous _habitat_ (H) in a 10 units x 10 units landscape, 1 unit is 100 meters. Having units this way allows
+easier conversion to ha as area unit that is often used in the North American bird literature. As a result, our landscape has an area of 1 km$^2$.
 
-```{r}
-phi <- c(10, 0.5)
-mix <- c(0.25, 0.75)
+The `road` argument defines the half-width of the road that is placed in a vertical position. The `edge` argument defines the width of the edge stratum on both sides of the road. Habitat (H), edge (E), and road (R) defines the 3 strata that we refer to by their initials (H for no stratification, HER for all 3 strata present).
 
-set.seed(1)
-(a2 <- bsims_populate(l, density=1)) # increase density
-(b2 <- bsims_animate(a2, vocal_rate=phi, mixture=mix))
-b2$vocal_rate
-```
+The origin of the Cartesian coordinate system inside the landscape is centered at the middle of the square. The `offset` argument allows the road and edge strata to be shifted to the left (negative values) or to the right (positive values) of the horizontal axis. This makes it possible to create landscapes with only
+two strata. The `bsims_init` function returns a landscape object (with class 'bsims_landscape')
 
-If we plot the time to first detection data, we can see how
-expected distribution (red) is different from the fitted
-Exponential distribution assuming homogeneity:
+```{r landscape,fig.width=10,fig.height=10}
+(l1 <- bsims_init(extent = 10, road = 0, edge = 0, offset = 0))
+(l2 <- bsims_init(extent = 10, road = 1, edge = 0, offset = 0))
+(l3 <- bsims_init(extent = 10, road = 0.5, edge = 1, offset = 2))
+(l4 <- bsims_init(extent = 10, road = 0, edge = 5, offset = 5))
 
-```{r}
-v <- get_events(b2, event_type="vocal")
-v1 <- v[!duplicated(v$i),]
-(phi_hat <- fitdistr(v1$t, "exponential")$estimate)
-
-hist(v1$t, xlab="Time of first detection (min)", freq=FALSE, main="", 
-  col="lightgrey", ylab="f(t)")
-curve(mix[1]*dexp(x, phi[1])+mix[2]*dexp(x, phi[2]), add=TRUE, col=2)
-curve(dexp(x, phi_hat), add=TRUE, col=4)
-legend("topright", bty="n", lty=1, col=c(2,4), 
-  legend=c("Expected (mixture)", "Estimated (exponential)"))
-```
-
-Now let's visualize the corresponding cumulative distribution function:
-
-```{r}
-br <- 1:10
-i <- cut(v1$t, c(0, br), include.lowest = TRUE)
-table(i)
-
-plot(stepfun(v1$t, (0:nrow(v1))/nrow(v1)), do.points=FALSE, xlim=c(0,10),
-  xlab="Time of first detection (min)", ylab="F(t)", main="")
-curve(1-mix[2]*exp(-phi[2]*x), add=TRUE, col=2)
-curve(1-exp(-phi_hat*x), add=TRUE, col=4)
-legend("bottomright", bty="n", lty=c(1,1,1,NA), 
-  col=c(1,2,4,3), pch=c(NA,NA,NA,21),
-  legend=c("Empirical", "Expected (mixture)", "Estimated (exponential)", "Binned"))
-points(br, cumsum(table(i))/sum(table(i)), cex=2, col=3, pch=21)
-```
-
-We use the `detect::cmulti` function to fit the finite mixture model:
-
-```{r}
-(y <- matrix(as.numeric(table(i)), nrow=1))
-(d <- matrix(br, nrow=1))
-cf <- cmulti.fit(y, d, type="fmix")$coef # log.phi, logit.c
-
-c(phi=phi[2], c=mix[2]) # setting
-c(phi_hat=exp(cf[1]), c_hat=plogis(cf[2])) # estimate
-```
-
-### Time-invariant finite mixture removal model
-
-The removal model can accommodate behavioral heterogeneity in singing by subdividing the 
-sampled population for a species at a given point into a finite mixture of birds with low and 
-high singing rates, which requires the additional estimation of the proportion of birds in the 
-sampled population with low singing rates.
-
-In the continuous-time formulation of the finite mixture (or two-point mixture) removal model, 
-the cumulative density function during a point count is given by 
-$p(t_{iJ}) = (1 - c) 1 + c (1 - e^{-t_{iJ} \phi}) = 1 - c e^{-t_{iJ} \phi}$, where 
-$\phi$ is the singing rate for the group of infrequently singing birds, and $c$ is the 
-proportion of birds during the point count that are infrequent singers. The remaining 
-proportions ($1 - c$; the intercept of the cumulative density function) of the frequent 
-singers are assumed to be detected instantaneously at the start of the first time interval. 
-In the simplest form of the finite mixture model, the proportion and singing rate of birds 
-that sing infrequently is homogeneous across all times and locations (model `Mf0`). 
-We are using the `type = "fmix"` for finite mixture removal models.
-
-Here, for the read bird data set:
-
-```{r}
-Mf0 <- cmulti(Y | D ~ 1, type="fmix")
-summary(Mf0)
-cf_Mf0 <- coef(Mf0)
-
-curve(1-plogis(cf_Mf0[2]) * exp(-x*exp(cf_Mf0[1])), 
-  xlim=c(0, 10), ylim=c(0, 1), col=4, main=paste(spp, "Mf0"),
-  xlab="Duration (min)", ylab=expression(p(t[J])))
-points(D[1,], cumsum(colSums(Y))/sum(Y), cex=2, col=3, pch=21)
-```
-
-### Time-varying finite mixture removal models
-
-Previously, researchers have applied covariate effects on the parameter 
-$\phi_{i}$ of the finite mixture model, similarly to how we modeled these effects in conventional models.
-This model assumes that the parameter $c$ is constant irrespective of time and location 
-(i.e. only the infrequent singer group changes its singing behavior).
-
-We can fit finite mixture models with `DAY` and `TSSR` as covariates on $\phi$. 
-In this case $p(t_{iJ}) = 1 - c e^{-t_{iJ} \phi_{i}}$ and 
-$log(\phi_{i}) = \beta_{0} + \sum^{K}_{k=1} \beta_{k} x_{ik}$ 
-is the linear predictor with $K$ covariates and the corresponding unknown coefficients 
-($\beta_{k}$, $k = 0,\ldots, K$).
-
-```{r}
-Mf1 <- cmulti(Y | D ~ DAY, X, type="fmix")
-Mf2 <- cmulti(Y | D ~ TSSR, X, type="fmix")
-```
-
-Compare the three finite mixture models based on AIC and inspect the summary for the best supported 
-model:
-
-```{r}
-Mf_AIC <- AIC(Mf0, Mf1, Mf2)
-Mf_AIC$delta_AIC <- Mf_AIC$AIC - min(Mf_AIC$AIC)
-
-Mf_Best <- get(rownames(Mf_AIC)[Mf_AIC$delta_AIC == 0])
-Mf_AIC[order(Mf_AIC$AIC),]
-
-summary(Mf_Best)
-```
-
-We produce a similar plot as before.
-
-```{r}
-b <- coef(Mf_Best)
-
-op <- par(mfrow=c(1,2))
-p1 <- 1-plogis(b[3])*exp(-3*exp(b[1]+b[2]*DAY))
-plot(DAY, p1, ylim=c(0,1), type="n",
-    main=paste(spp, rownames(Mf_AIC)[Mf_AIC$delta_AIC == 0]),
-    ylab="P(availability)")
-for (i in seq_len(n)) {
-    lines(DAY[c(i,i+1)], p1[c(i,i+1)], col=col[i], lwd=2)
-}
-abline(h=range(p1), col="grey")
-
-plot(Duration, Duration, type="n", ylim=c(0,1),
-    ylab="P(availability)")
-for (i in seq_len(n)) {
-    p2 <- 1-plogis(b[3])*exp(-Duration*exp(b[1]+b[2]*DAY[i]))
-    lines(Duration, p2, col=col[i])
-}
-abline(v=3, h=range(p1), col="grey")
+op <- par(mfrow = c(2, 2))
+plot(l1, main = "Habitat")
+points(0, 0, pch=3)
+plot(l2, main = "Habitat & road")
+lines(c(0, 0), c(-5, 5), lty=2)
+plot(l3, main = "Habitat, edge, road + offset")
+arrows(0, 0, 2, 0, 0.1, 20)
+lines(c(2, 2), c(-5, 5), lty=2)
+points(0, 0, pch=3)
+plot(l4, main = "2 habitats")
+arrows(0, 0, 5, 0, 0.1, 20)
+lines(c(5, 5), c(-5, 5), lty=2)
+points(0, 0, pch=3)
 par(op)
 ```
 
 
-An alternative parametrization is that $c_{i}$ rather than $\phi$ be the time-varying parameter, 
-allowing the individuals to switch between the frequent and infrequent group depending on covariates. 
-We can fit this class of finite mixture model with `DAY` and `TSSR` as covariates on $c$ 
-using `type = "mix"` (instead of `"fmix"`). 
-In this case $p(t_{iJ}) = 1 - c_{i} e^{-t_{iJ} \phi}$ and 
-$logit(c_{i}) = \beta_{0} + \sum^{K}_{k=1} \beta_{k} x_{ik}$ is the linear predictor with $K$ 
-covariates and the corresponding unknown coefficients ($\beta_{k}$, $k = 0,\ldots, K$). 
-Because $c_{i}$ is a proportion, we model it on the logit scale.
+### Population
 
-```{r}
-Mm1 <- cmulti(Y | D ~ DAY, X, type="mix")
-Mm2 <- cmulti(Y | D ~ TSSR, X, type="mix")
+The `bsims_populate` function _populates_ the landscape we created by the `bsims_init` function, which is the first argument we have to pass to `bsims_populate`. The function returns a population object (with class 'bsims_population'). The most important argument that controls how many individuals will inhabit our landscape is `density` that defines the expected value of individuals per unit area (1 ha).
+
+By default, `density = 1` ($D=1$) and we have 100 ha in the landscape ($A=100$) which translates into 100 individuals on average ($E[N]=\lambda=AD$).
+The actual number of individuals in the landscape might deviate from this expectation, because $N$ is a random variable ($N \sim f(\lambda)$). The `abund_fun` argument controls this relationship between the expected ($\lambda$) and realized abundance ($N$). The default is a Poisson distribution:
+
+```{r pop-pois}
+bsims_populate(l1)
 ```
 
-We did not fit a null model for this parametrization, because it is identical to the `Mf0` model, 
-so that model `Mf0` is what we use to compare AIC values and inspect the summary for the best 
-supported model:
+Changing `abund_fun` can be useful to make abundance constant or allow under- or over-dispersion, e.g.:
 
-```{r}
-Mm_AIC <- AIC(Mf0, Mm1, Mm2)
-Mm_AIC$delta_AIC <- Mm_AIC$AIC - min(Mm_AIC$AIC)
-
-Mm_Best <- get(rownames(Mm_AIC)[Mm_AIC$delta_AIC == 0])
-Mm_AIC[order(Mm_AIC$AIC),]
-
-summary(Mm_Best)
+```{r pop-nb}
+summary(rpois(100, 100)) # Poisson variation
+summary(MASS::rnegbin(100, 100, 0.8)) # NegBin variation
+negbin <- function(lambda, ...) MASS::rnegbin(1, lambda, ...)
+bsims_populate(l1, abund_fun = negbin, theta = 0.8)
+## constant abundance
+bsims_populate(l1, abund_fun = function(lambda, ...) lambda)
 ```
 
-We produce a similar plot as before:
+Once we determine how many individuals will populate the landscape, we have control over the spatial arrangement of the nest location for each individual. The default is a homogeneous Poisson point process (complete spatial randomness). 
+Deviations from this can be controlled by the `xy_fun`. This function takes distance as its only argument and returns a numeric value between 0 and 1. A function `function(d) reurn(1)` would be equivalent with the Poisson process, meaning that every new random location is accepted with probability 1 irrespective of the distance between the new location and the previously generated point locations in the landscape.
 
-```{r}
-b <- coef(Mm_Best)
+When this function varies with distance, it leads to a non-homogeneous point process via this accept-reject algorithm. The other arguments (`margin`, `maxit`, `fail`) are passed to the underlying `accepreject` function to remove edge effects and handle high rejection rates.
 
-op <- par(mfrow=c(1,2))
-p1 <- 1-plogis(b[2]+b[3]*DAY)*exp(-3*exp(b[1]))
-plot(DAY, p1, ylim=c(0,1), type="n",
-    main=paste(spp, rownames(Mm_AIC)[Mm_AIC$delta_AIC == 0]),
-    ylab="P(availability)")
-for (i in seq_len(n)) {
-    lines(DAY[c(i,i+1)], p1[c(i,i+1)], col=col[i], lwd=2)
-}
-abline(h=range(p1), col="grey")
+In the next example, we fix the abundance to be constant (i.e. not a random variable, $N=\lambda$) and with different spatial point processes:
 
-plot(Duration, Duration, type="n", ylim=c(0,1),
-    ylab="P(availability)")
-for (i in seq_len(n)) {
-    p2 <- 1-plogis(b[2]+b[3]*DAY[i])*exp(-Duration*exp(b[1]))
-    lines(Duration, p2, col=col[i])
-}
-abline(v=3, h=range(p1), col="grey")
+```{r pop-xy,fig.height=9,fig.width=6}
+D <- 0.5
+f_abund <- function(lambda, ...) lambda
+
+## systematic
+f_syst <- function(d)
+  (1-exp(-d^2/1^2) + dlnorm(d, 2)/dlnorm(exp(2-1),2)) / 2
+## clustered
+f_clust <- function(d)
+  exp(-d^2/1^2) + 0.5*(1-exp(-d^2/4^2))
+
+p1 <- bsims_populate(l1, density = D, abund_fun = f_abund)
+p2 <- bsims_populate(l1, density = D, abund_fun = f_abund, xy_fun = f_syst)
+p3 <- bsims_populate(l1, density = D, abund_fun = f_abund, xy_fun = f_clust)
+
+distance <- seq(0,10,0.01)
+op <- par(mfrow = c(3, 2))
+plot(distance, rep(1, length(distance)), type="l", ylim = c(0, 1), 
+  main = "random", ylab=expression(f(d)), col=2)
+plot(p1)
+
+plot(distance, f_syst(distance), type="l", ylim = c(0, 1), 
+  main = "systematic", ylab=expression(f(d)), col=2)
+plot(p2)
+
+plot(distance, f_clust(distance), type="l", ylim = c(0, 1), 
+  main = "clustered", ylab=expression(f(d)), col=2)
+plot(p3)
 par(op)
 ```
 
+The `get_nests` function extracts the nest locations. `get_abundance` and `get_density` gives the total abundance ($N$) and density ($D=N/A$, where $A$ is `extent^2`) in the landscape, respectively.
 
-## Let the best model win
+If the landscape is stratified, that has no effect on density unless we specify different values through the `density` argument as a vector of length 3 referring to the HER strata:
 
-So which of the 3 parametrizations proved to be best for our data? 
-It was the finite mixture with time-varying proportion of infrequent singers.
-Second was the other finite mixture model, while the conventional model 
-was lagging behind.
+```{r pop-dens,fig.width=10,fig.height=10,out.width='100%'}
+D <- c(H = 2, E = 0.5, R = 0)
 
-```{r}
-M_AIC <- AIC(Me_Best, Mf_Best, Mm_Best)
-M_AIC$delta_AIC <- M_AIC$AIC - min(M_AIC$AIC)
-M_AIC[order(M_AIC$AIC),]
+op <- par(mfrow = c(2, 2))
+plot(bsims_populate(l1, density = D), main = "Habitat")
+plot(bsims_populate(l2, density = D), main = "Habitat & road")
+plot(bsims_populate(l3, density = D), main = "Habitat, edge, road + offset")
+plot(bsims_populate(l4, density = D), main = "2 habitats")
+par(op)
 ```
 
+But birds don't just stay put in one place and do nothing. They move and vocalize. The `bsims_animate` function _animates_ the population created by the `bsims_populate` function. `bsims_animate` returns an events object (with class 'bsims_events'). The most important arguments are governing the `duration` of the simulation in minutes, the vocalization (`vocal_rate`), and the movement (`move_rate`) rates as average number of events per minute.
 
-Finite mixture models provide some really nice insight into how singing behavior changes over time and, due to more parameters, they provide a better fit and thus minimize bias in population size estimates. But all this improvement comes with a price: sample size requirements (or more precisely, the number of detections required) are really high. To have all the benefits with reduced variance, one needs about 1000 non-zero observations to fit finite mixture models, 20 times more than needed to reliably fit conventional removal models. This is much higher than previously suggested minimum sample sizes.
+`bsims_animate` uses independent Exponential distributions with rates `vocal_rate` and `move_rate` to simulate vocalization and movement events, respectively.
 
-Our findings also indicate that lengthening the count duration from 3 minutes to 5--10 minutes is an important consideration when designing field surveys to increase the accuracy and precision of population estimates. Well-informed survey design combined with various forms of removal sampling are useful in accounting for availability bias in point counts, thereby improving population estimates, and allowing for better integration of disparate studies at larger spatial scales.
-
-
-```{block2, type='rmdexercise'}
-**Exercise**
-
-Compare different durations, numbers and lengths of time intervals when estimating vocalization rates.
-
-Estimate vocalization rates for other species (e.g. rare species, specias with less frequent vocalizations). 
-
-Compare linear and polynomial `DAY` effects for migratory and resident species (e.g. BCCH, BOCH, BRCR, CORA, GRAJ, RBNU).
-```
-
-## Estimating abundance
-
-Let us use the bSims approach to see how well we can estimate abundance
-after accounting for availability. We set `Den` as density ($D$), and because
-area is $A$ = 100 ha by default, the expected value of the abundance ($\lambda$)
-bacomes $AD$, while the actual abundance ($N$) is a realization of that
-based on Poisson distribution ($N \sim Poisson(\lambda)$):
-
-```{r}
-phi <- 0.5
-Den <- 1
-
-set.seed(1)
+```{r beh-events,fig.height=4,fig.width=6}
 l <- bsims_init()
-a <- bsims_populate(l, density=Den)
-(b <- bsims_animate(a, vocal_rate=phi, move_rate=0))
+p <- bsims_populate(l, density = 0.5)
+e1 <- bsims_animate(p, vocal_rate = 1)
 ```
 
-The next function we use is `bsims_transcribe` which takes the events data
-and bins it according to time intervals, `tint` defines the end times of
-each interval:
+There are no movement related events when `move_rate = 0`, the individuals are always located at the nest, i.e. there is no within territory movement. If we increase the movement rate, we also have to increase the value of `movement`, that is the standard deviation of bivariate Normal kernels centered around each nest location. This kernel is used to simulate new locations for the movement events. Increase the value of `movement` to see how that works.
 
-```{r}
-tint <- c(1, 2, 3, 4, 5)
-(tr <- bsims_transcribe(b, tint=tint))
-tr$removal # binned new individuals
-(Y <- sum(tr$removal)) # detected in 0-3 min
+Movement is illustrated by a line, crosses indicate nest locations, dots are the vocalization events
+
+```{r beh-move,fig.width=10,fig.height=5,out.width='100%'}
+e2 <- bsims_animate(p, move_rate = 1, movement = 0.25)
+
+op <- par(mfrow = c(1, 2))
+plot(e1, main = "Closure")
+plot(e2, main = "Movement")
+par(op)
 ```
 
-After `max(tint)` duration, we detected $Y$ individuals.
-Because $E[Y] = NC$, we only have to estimate the correction factor $C$,
-that happens to be $C=p$ in this case because our bSims world
-ignored the observation process so far. $p$ is estimated based on $\phi$:
+## Exercise
 
-```{r}
-fit <- cmulti.fit(tr$removal, matrix(tint, nrow=1), type="rem")
-c(true=phi, estimate=exp(fit$coef))
-(p <- 1-exp(-max(tint)*exp(fit$coef)))
+Play time!
 
-tt <- seq(0, 10, 0.01)
-plot(tt, 1-exp(-tt*phi), type="l", ylim=c(0, 1),
-  ylab="P(availability)", xlab="Duration", lty=2)
-lines(tt, 1-exp(-tt*exp(fit$coef)))
-for (i in seq_len(length(tint))) {
-  ii <- c(0, tint)[c(i, i+1)]
-  ss <- tt >= ii[1] & tt <= ii[2]
-  xi <- tt[ss]
-  yi <- 1-exp(-xi*exp(fit$coef))
-  polygon(c(xi, xi[length(xi)]), c(yi, yi[1]),
-    border=NA, col="#0000ff33")
-}
-legend("bottomright", bty="n", lty=c(2, 1, NA), 
-  fill=c(NA, NA, "#0000ff33"), border=NA, 
-  legend=c("True", "Estimated", "'New individuals'"))
+```{r eval=FALSE}
+run_app("bsimsH")
 ```
-
-Our estimate of $N$ becomes $Y/C=Y/p$:
-
-```{r}
-N <- sum(a$abundance)
-Nhat <- Y/p
-c(true=N, estimate=Nhat)
-```
-
-In this case, area is known, so density becomes:
-
-```{r}
-A <- sum(a$area)
-c(true=N / A, estimate=Nhat / A)
-```
-
-Next we use the `Best` model from our real JOSM bird data analysis:
-
-```{r}
-spp <- "TEWA"
-
-Y <- as.matrix(yall[[spp]])
-D <- matrix(c(3, 5, 10), nrow(Y), 3, byrow=TRUE,
-  dimnames=dimnames(Y))
-X <- josm$surveys[rownames(Y), c("DAY", "TSSR")]
-
-Best <- get(rownames(M_AIC)[M_AIC$delta_AIC == 0])
-summary(Best)
-```
-
-In this case, availability varies due to `DAY`.
-Our estimate of $N_i$ becomes $Y_i/C_i=Y_i/p_i$:
-
-```{r}
-p <- 1 - plogis(model.matrix(Best) %*% coef(Best)[-1]) *
-  exp(-10 * exp(coef(Best)[1]))
-summary(p)
-```
-
-We can now calculate mean abundance, where `ytot` tallies up the counts
-across the 3 time intervals:
-
-```{r}
-ytot <- rowSums(Y)
-table(ytot)
-mean(ytot / p)
-```
-
-Alternatively, we can fit a GLM and use `log(p)` as an offset:
-
-```{r}
-mod <- glm(ytot ~ 1, family=poisson, offset=log(p))
-summary(mod)
-```
-
-The GLM based estimate comes from the intercept, because
-$E[Y_i]=N_i C_i$ is equivalent to $\lambda_i=e^{\beta_0} e^{o_i}$,
-this $\hat{N_i}=e^{\hat{\beta_0}}$:
-
-```{r}
-exp(coef(mod))
-```
-
-This result tells us mean abundance after correcting for availability
-bias, but we don't know what area was effectively sampled,
-and detection of individuals given availability is probably less than 1
-because this happens to be a real data set and it is guaranteed that
-humans in the forest cannot detect birds that are very far (say > 500 m away).
-We shall address these problem in the next chapter.

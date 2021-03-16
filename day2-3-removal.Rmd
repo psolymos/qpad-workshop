@@ -1,0 +1,270 @@
+---
+title: "Removal Modeling"
+author: "Peter Solymos <solymos@ualberta.ca>"
+---
+
+```{r beh-libs,message=TRUE,warning=FALSE}
+library(bSims)              # simulations
+library(detect)             # multinomial models
+load("data/josm-data.rda")  # JOSM data
+set.seed(1)
+```
+
+Let's build a simple unstratified landscape: extent is given in 100 m units as we saw before
+
+```{r}
+(l <- bsims_init(extent=10))
+```
+
+```{r fig.width=8,fig.height=8}
+plot(l)
+```
+
+We have a 100 ha landscape that we populate with birds, 1 bird / ha using a Poisson spatial point process. As a result, we have $N$ birds in the landscape, $N \sim Poisson(\lambda)$, $\lambda = DA$:
+
+```{r}
+(a <- bsims_populate(l, density=0.5))
+```
+
+```{r fig.width=5,fig.height=5}
+plot(a)
+```
+
+The locations can be seen as nest locations (`i` is the individual ID, `s` is the stratum where that nest is located, `x` and `y` are the coordinates of the nests, ignore column `g` for now):
+
+```{r}
+head(get_nests(a))
+```
+
+We can conveniently extract abundance and density:
+
+```{r}
+get_abundance(a) # abundance
+get_density(a)   # density
+get_abundance(a)/get_density(a) # area
+```
+
+Bring the population to life (ignoring movement)
+
+```{r}
+(b <- bsims_animate(a, 
+  vocal_rate=0.5, duration=10))
+```
+
+The `get_events` function extracts the events as a data frame with columns describing the location (`x`, `y`) and time (`t`) of the events (`v` is 1 for vocalizations and 0 otherwise) for each individual (`i` gives the individual identifier that links individuals to the nest locations)
+
+```{r}
+v <- get_events(b)
+head(v)
+```
+
+## Survival model
+
+Survival models assess time-to-event data which is often censored (some event has not occurred at the time the data collection ended).
+
+Event time ($T$) is a continuous random variable. In the simplest case, its probability density function is the Exponential distribution: $f(t)=\phi e^{-t\phi}$. The corresponding cumulative distribution function is: $F(t)=\int_{0}^{t} f(t)dt=1-e^{-t\phi}$, giving the probability that the event has occurred by duration $t$ and we will refer to this probability as $p_t$. The parameter $\phi$ is the rate of the Exponential distribution with mean $1/\phi$ and variance $1/\phi^2$.
+
+This simplest survival distribution assumes constant risk over time ($\lambda(t)=\phi$), which corresponds to the Exponential distribution. The Exponential distribution also happens to describe the lengths of the inter-event times in a homogeneous Poisson process (events are independent, 'memory-less' process).
+
+## Vocalization events
+
+Let's put movement aside for now. Event times in our bSims example follow a Poisson process with rate $\phi$ (`vocal_rate=0.5`) within `duration` $t=10$ minutes.
+
+We can plot the events data to see all the individuals over time (horizontal lines) with their events (filled: 1st event, open: subsequent events). The individuals are ordered according to the time to their 1st event. The shape of this accumulation curve follows the CDF of the exponential distribution with rate 1 (red line, multiplied by $N$)
+
+```{r}
+plot(v)
+curve((1-exp(-0.5*x)) * get_abundance(b), col=2, add=TRUE)
+```
+
+Now instead of the cumulative density function (above), we look at the time to 1st detection data: we get that by taking the 1st mention of the individual IDs. The table is sorted by `t`, so the non-duplicated mentions of the individuals will give us the time it was 1st detected.
+
+Let's subset the vocalization events to include the times of first detection for each individual (`v1`). The estimated rate should match our settings, the plot shows the Exponential probability density function on top of the event times:
+
+```{r}
+v1 <- v[!duplicated(v$i),]
+head(v1)
+```
+
+We use the `fitdistr` function to fit an exponential distribution to these event times:
+
+```{r}
+phi <- 0.5
+(phi_hat <- fitdistr(v1$t, "exponential")$estimate)
+```
+
+The estimate is close to the true value of 0.5. Let's plot this
+
+```{r}
+hist(v1$t, xlab="Time of first detection (min)", freq=FALSE, main="", 
+  col="lightgrey", ylab="f(t)")
+curve(dexp(x, phi), add=TRUE, col=2)
+curve(dexp(x, phi_hat), add=TRUE, col=4)
+legend("topright", bty="n", lty=1, col=c(2,4), 
+  legend=c("Expected", "Estimated"))
+```
+
+Now let's visualize the corresponding cumulative distribution function.
+We also bin the events into time intervals defined by interval end times
+in the vector `br` (breaks to be used with `cut`):
+
+```{r}
+br <- c(3, 5, 10)
+i <- cut(v1$t, c(0, br), include.lowest = TRUE)
+table(i)
+
+plot(stepfun(v1$t, (0:nrow(v1))/nrow(v1)), do.points=FALSE, xlim=c(0,10),
+  xlab="Time of first detection (min)", ylab="F(t)", main="")
+curve(1-exp(-phi*x), add=TRUE, col=2)
+curve(1-exp(-phi_hat*x), add=TRUE, col=4)
+lines(stepfun(br, c(0, cumsum(table(i))/sum(table(i)))), col=3)
+legend("bottomright", bty="n", lty=c(1,1,1,1), col=c(1,2,4,3), 
+  legend=c("Empirical", "Expected", "Estimated", "Binned"))
+```
+
+## Removal model
+
+The time-removal model, originally developed for estimating wildlife and fish abundances from mark-recapture studies, was later reformulated for avian surveys with the goal of improving estimates of bird abundance by accounting for the availability bias inherent in point-count data. The removal model applied to point-count surveys estimates the probability that a bird is available for detection as a function of the average number of detectable cues that an individual bird gives per minute (singing rate, $\phi$), and the known count duration ($t$).
+
+Time-removal models are based on a removal experiment whereby animals are trapped and thereby removed from the closed population of animals being sampled. When applying a removal model to avian point-count surveys, the counts of singing birds ($Y_{ij}, \ldots, Y_{iJ}$) within a given point-count survey $i$ ($i  = 1,\ldots, n$) are tallied relative to when each bird is first detected in multiple and consecutive time intervals, with the survey start time $t_{i0} = 0$, the end times of the time intervals $t_{ij}$ ($j = 1, 2,\ldots, J$), and the total count duration of the survey $$t_{iJ}$$. We count each individual bird once, so individuals are 'mentally removed' from a closed population of undetected birds by the surveyor.
+
+The continuous-time formulation of the removal model is identical to the Exponential survival model formulation with respect to the cumulative density function, which defines probability of availability for sampling given the occurrence of the species. The response variable in the removal model follows multinomial distribution with cell probabilities derived from the cumulative probability function.
+
+We will use the `detect::cmulti` function to fit multinomial models using conditional maximum likelihood procedure (the conditioning means that we only use observations where the total count is not 0, i.e. the species was present). The `Y` matrix lists the number of new individuals counted in each time interval, the `D` matrix gives the interval end times. (We use the `detect::cmulti.fit` function to be able to fit the model to a single survey.)
+
+```{r}
+(y <- matrix(as.numeric(table(i)), nrow=1))
+(d <- matrix(br, nrow=1))
+phi_hat1 <- exp(cmulti.fit(y, d, type="rem")$coef)
+
+c(True=phi,        # setting
+  T21=phi_hat, # from time-to-event data
+  Rem=phi_hat1)
+```
+
+Notice that estimates can be off relative the true value. Time to 1st event data provides more information (exact times of events), the binned approach looses that information, and as a result can be more variable. Historically, the collection of time-to-1st event data has been difficult in the field. If a recording exists, this can be added. We'll talk more about recordings later.
+
+```{r}
+plot(stepfun(v1$t, (0:nrow(v1))/nrow(v1)), do.points=FALSE, xlim=c(0,10),
+  xlab="Time of first detection (min)", ylab="F(t)", main="")
+curve(1-exp(-phi*x), add=TRUE, col=2)
+curve(1-exp(-phi_hat*x), add=TRUE, col=4)
+curve(1-exp(-phi_hat1*x), add=TRUE, col=3)
+legend("bottomright", bty="n", lty=c(1,1,1,1), col=c(1,2,4,3), 
+  legend=c("Empirical", "Expected", "Estimated", "Binned"))
+```
+
+### Real data
+
+Let's pick a species from the JOSM data set. For predictors, we will use a variable capturing date (`DAY`; standardized ordinal day of the year) and an other one capturing time of day (`TSSR`; time since local sunrise). The data frame `X` contains the predictors. The matrix `Y` contains the counts of newly counted individuals binned into consecutive time intervals: cell values are the $Y_{ij}$'s. The `D` object is another matrix mirroring the structure of `Y` but instead of counts, it contains the interval end times: cell values are the $t_{ij}$'s.
+
+```{r}
+yall <- Xtab(~ SiteID + Dur + SpeciesID, 
+  josm$counts[josm$counts$DetectType1 != "V",])
+yall <- yall[sapply(yall, function(z) sum(rowSums(z) > 0)) > 100]
+
+spp <- "TEWA"
+
+Y <- as.matrix(yall[[spp]])
+D <- matrix(c(3, 5, 10), nrow(Y), 3, byrow=TRUE,
+  dimnames=dimnames(Y))
+X <- josm$surveys[rownames(Y), c("DAY", "TSSR")]
+head(Y[rowSums(Y) > 0,])
+head(D)
+summary(X)
+```
+
+The `D` matrix can take different methodologies for each row.
+The leftover values in each row must be filled with `NA`s
+and the pattern of `NA`s must match between the `Y` and `D` matrices
+(i.e. you shouldn't have observation in a non-existing time interval).
+Integrating data becomes really easy this way, for example `D` can look like this (whatever the time unit is, e.g. min, that is what event rate is going to be measured in, e.g. 1/min):
+
+```{r}
+matrix(c(3, 5, 10, NA, NA, 1:5, 4, 8, NA, NA, NA), 3, byrow=TRUE)
+```
+
+### Time-invariant conventional removal model
+
+Time-invariant means that the rate is constant over time (i.e. no difference between morning and midnight), while conventional refers to the assumption that all individuals share the same rate (their behavior is identical in this regard).
+
+In the time-invariant conventional removal model (`Me0`), the individuals of a species at a given location and time are assumed to be homogeneous in their singing rates. The time to first detection follows the Exponential distribution, and the cumulative density function of times to first detection in time interval (0, $t_{iJ}$) gives us the probability that a bird sings at least once during the point count as $p(t_{iJ}) = 1 - exp(-t_{iJ} \phi)$.
+
+We fit this model by specifying intercept-only in the right hand side of the formula, and `type="rem"` as part of the `cmulti` call:
+
+```{r}
+Me0 <- cmulti(Y | D ~ 1, type="rem")
+summary(Me0)
+(phi_Me0 <- exp(coef(Me0)))
+```
+
+```{r}
+curve(1-exp(-x*phi_Me0), xlim=c(0, 10), ylim=c(0, 1), col=4,
+  xlab="Duration (min)", ylab=expression(p(t[J])), 
+  main=paste(spp, "Me0"))
+lines(stepfun(D[1,], c(0, cumsum(colSums(Y))/sum(Y))), cex=2, col=3, pch=21)
+```
+
+### Time-varying conventional removal model
+
+Singing rates of birds vary with time of day, time of year, breeding status, and stage of the nesting cycle. Thus, removal model estimates of availability may be improved by accounting for variation in singing rates using covariates for day of year and time of day. In this case $p(t_{iJ}) = 1 - e^{-t_{iJ} \phi_{i}}$ and $log(\phi_{i}) = \beta_{0} + \sum^{K}_{k=1} \beta_{k} x_{ik}$ is the linear predictor with $K$ covariates and the corresponding unknown coefficients ($\beta_{k}$, $k = 0,\ldots, K$).
+
+Let's fit a couple of time-varying models using `DAY` and `TSSR` as covariates:
+
+```{r beh-Me,cache=TRUE}
+Me1 <- cmulti(Y | D ~ DAY, X, type="rem")
+Me2 <- cmulti(Y | D ~ TSSR, X, type="rem")
+```
+
+Now compare the three conventional models based on AIC and inspect the summary for the best supported model with the `DAY` effect.
+
+```{r}
+Me_AIC <- AIC(Me0, Me1, Me2)
+Me_AIC$delta_AIC <- Me_AIC$AIC - min(Me_AIC$AIC)
+Me_AIC[order(Me_AIC$AIC),]
+
+Me_Best <- get(rownames(Me_AIC)[Me_AIC$delta_AIC == 0])
+summary(Me_Best)
+```
+
+To visually capture the time-varying effects, we make some plots using base graphics, colors matching the time-varying predictor. This way we can not only assess how availability probability (given a fixed time interval) is changing with the values of the predictor, but also how the cumulative distribution changes with time.
+
+```{r}
+b <- coef(Me_Best)
+
+n <- 100
+DAY <- seq(min(X$DAY), max(X$DAY), length.out=n+1)
+TSSR <- seq(min(X$TSSR), max(X$TSSR), length.out=n+1)
+Duration <- seq(0, 10, length.out=n)
+col <- colorRampPalette(c("red", "yellow", "blue"))(n)
+
+op <- par(mfrow=c(1,2))
+p1 <- 1-exp(-3*exp(b[1]+b[2]*DAY))
+plot(DAY, p1, ylim=c(0,1), type="n",
+    main=paste(spp, rownames(Me_AIC)[Me_AIC$delta_AIC == 0]),
+    ylab="P(availability)")
+for (i in seq_len(n)) {
+    lines(DAY[c(i,i+1)], p1[c(i,i+1)], col=col[i], lwd=2)
+}
+abline(h=range(p1), col="grey")
+
+plot(Duration, Duration, type="n", ylim=c(0,1),
+    ylab="P(availability)")
+for (i in seq_len(n)) {
+    p2 <- 1-exp(-Duration*exp(b[1]+b[2]*DAY[i]))
+    lines(Duration, p2, col=col[i])
+}
+abline(v=3, h=range(p1), col="grey")
+par(op)
+```
+
+## Under the hood
+
+So what is really happening when we fit a removal model?
+
+1. We use conditional maximum likelihood, which means that we only look at survey data where al least 1 individual was detected
+2. We assign the 1st detection of every new individual to a time interval, but do not count any subsequent detections of the already tallied individuals
+3. The counts within the time intervals are treated as a Multinomial response with $Y$ being the total count (sum of new individuals)
+4. The cell probabilities are calculated based on the cumulative density function
+5. The cell probabilities are parametrized based on the rate parameter, which can also depend on covariates using a logarithmic link function
+6. The conditional likelihood function is maximized with respect to the data given the betas

@@ -3,7 +3,7 @@ qpad_local <- function(day) {
   day <- match.arg(as.character(day), as.character(1:4))
   lf <- list.files()
   fin <- lf[startsWith(lf, paste0("day", day)) & endsWith(lf, ".Rmd")]
-  fout <- paste0("LOCAL-", z)
+  fout <- paste0("LOCAL-", fin)
   file.copy(from=fin, to=fout, overwrite=FALSE)
   cat("\nFiles copied: work in your LOCAL copies\n\n")
   invisible(NULL)
