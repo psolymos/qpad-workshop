@@ -94,7 +94,7 @@ People often confuse these two conditional probabilities:
 
 1. Observing 0 given that the species is present:
   - $P(Y=0 \mid N>0) = 1-\delta$
-2. Presence of a species given that we observe 0 (we ask this question _after_ observing the data):
+2. Presence of a species given that we observe 0:
   - $P(N> 0 \mid Y=0) = \frac{P(Y=0 \mid N>0) P(N>0)}{P(Y=0)}$
   - $\frac{(1-\delta)\varphi}{\varphi (1-\delta) + (1-\varphi)} = \frac{\varphi (1-\delta)}{1-\delta \varphi}$
 
@@ -288,6 +288,24 @@ Probabilistic simulation is useful to test how well a stat method is working _if
 It is not quite as useful for assessing how robust the method is when the assumptions are _not_ met.
 
 You need to link to biological mechanisms to do sensitivity analysis.
+
+***
+
+# It is a good pass time
+
+\centering
+_"I've yet to see any problem, however complicated, which when you looked at it the right way didn’t become still more complicated."_ --- Poul Anderson, Call Me Joe
+
+***
+
+# It is popular
+
+\centering
+```{r echo=FALSE,out.width="250px"}
+include_graphics("images/physical.png")
+```
+
+_"Love the simulation we’re dreaming in"_ --- Dua Lipa, Physical
 
 ***
 
