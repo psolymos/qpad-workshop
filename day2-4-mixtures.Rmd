@@ -10,7 +10,7 @@ load("data/josm-data.rda")  # JOSM data
 set.seed(1)
 ```
 
-```{r eval=FALSE}
+```{r eval=TRUE}
 ## data analysis from day2-3 file
 yall <- Xtab(~ SiteID + Dur + SpeciesID, 
   josm$counts[josm$counts$DetectType1 != "V",])
@@ -385,8 +385,9 @@ xall <- bsims_all(
   density=c(1, 1, 0),
   vocal_rate=phi,
   move_rate=1, movement=0.2,
-  tau=tau,
-  tint=tbr, rint=rbr)
+  tau=0.8,
+  tint=c(3,5,10), 
+  rint=c(0.5, 1, 1.5))
 xall
 ```
 

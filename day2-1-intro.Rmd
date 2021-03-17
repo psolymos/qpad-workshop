@@ -283,15 +283,15 @@ And a lot more that we'll cover later
 
 # Why do we need simulation
 
-Probabilistic simulation is useful to test how well a stat method is working _if_ the assumptions are met.
+Statistical techniques are expected to provide unbiased estimates when the data generation process follows the assumptions of the model. __Testing this is standard practice for any new technique.__
 
-It is not quite as useful for assessing how robust the method is when the assumptions are _not_ met.
+But testing if the __model assumptions are realistic__ is rarely evaluated with the same rigor.
 
-You need to link to biological mechanisms to do sensitivity analysis.
+For that we need to link to biological mechanisms to do sensitivity analysis. This is a lot more complex than a coin toss.
 
 ***
 
-# It is a good pass time
+# Capturing complexity
 
 \centering
 _"I've yet to see any problem, however complicated, which when you looked at it the right way didn’t become still more complicated."_ --- Poul Anderson, Call Me Joe
@@ -306,6 +306,16 @@ include_graphics("images/physical.png")
 ```
 
 _"Love the simulation we’re dreaming in"_ --- Dua Lipa, Physical
+
+***
+
+# Some history
+
+Movement trajectories of bird flocks to mitigate mortality near airports and wind farms.
+
+Beth Rigby ([2016](https://conservancy.umn.edu/handle/11299/193439)): _Simulating Effects of Imperfect Detectability in Bird Surveys_
+
+But not a lot more...
 
 ***
 

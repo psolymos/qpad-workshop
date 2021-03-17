@@ -211,7 +211,7 @@ Singing rates of birds vary with time of day, time of year, breeding status, and
 
 Let's fit a couple of time-varying models using `DAY` and `TSSR` as covariates:
 
-```{r beh-Me,cache=TRUE}
+```{r beh-Me}
 Me1 <- cmulti(Y | D ~ DAY, X, type="rem")
 Me2 <- cmulti(Y | D ~ TSSR, X, type="rem")
 ```

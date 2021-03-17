@@ -33,7 +33,8 @@ Each day will consist of 3 sessions, roughly one hour each, with short breaks in
 | **Day 2** |  **Behavioral complexities**  |    |
 |  |  1. Statistical assumptions and nuisance variables  |  [Slides](https://peter.solymos.org/qpad-workshop/day2-1-intro.pdf)  |
 |  |  2. Behavioral complexities  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-2-behavior.html)  |
-|  |  3. Removal modeling techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-removel.html)  |
+|  |  3. Removal modeling techniques 1.  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-removal.html)  |
+|  |  3. Removal modeling techniques 2.  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-mixtures.html)  |
 | **Day 3** |  **The detection process** |    |
 |  |  1. Distance sampling |    |
 |  |  2. Calibrating population density  |    |
