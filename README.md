@@ -27,12 +27,13 @@ Each day will consist of 3 sessions, roughly one hour each, with short breaks in
 | Session | Topic | Files |
 | --- | --- | :---: |
 | **Day 1** |  **Naive techniques** |    |
-|  |  1. Introductions |  [Slides](day1-1-intro.pdf)  |
-|  |  2. Organizing point count data |  [Notes](day1-2-data-processing.Rmd)  |
-|  |  3. Regression techniques  |  [Notes](day1-3-regression.Rmd)  |
+|  |  1. Introductions |  [Slides](https://peter.solymos.org/qpad-workshop/day1-1-intro.pdf)  |
+|  |  2. Organizing point count data |  [Notes](https://peter.solymos.org/qpad-workshop/day1-2-data-processing.html)  |
+|  |  3. Regression techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day1-3-regression.html)  |
 | **Day 2** |  **Behavioral complexities**  |    |
-|  |  1. Statistical assumptions and nuisance variables  |  [Slides](day2-1-intro.pdf)  |
-|  |  2. Removal modeling techniques  |  [Notes](day2-2-behavior.Rmd)  |
+|  |  1. Statistical assumptions and nuisance variables  |  [Slides](https://peter.solymos.org/qpad-workshop/day2-1-intro.pdf)  |
+|  |  2. Behavioral complexities  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-2-behavior.html)  |
+|  |  3. Removal modeling techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-removel.html)  |
 | **Day 3** |  **The detection process** |    |
 |  |  1. Distance sampling |    |
 |  |  2. Calibrating population density  |    |
