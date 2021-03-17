@@ -111,7 +111,7 @@ But we see something very useful: the proportion of deciduous forest in the land
 
 With this new found knowledge, let's fit a parametric (Poisson) linear model using `Decid` as a predictor:
 
-```{r regr-pois2}
+```{r regr-pois2x}
 mP1 <- glm(y ~ Decid, data=x, family=poisson)
 mean(x$y)
 mean(fitted(mP1))
@@ -161,7 +161,7 @@ The other little table returned by `R2dev()` shows deviance based (quasi) $R^2$ 
 None of these two models is a particularly good fit in terms
 of the parametric distribution. This, however does not mean these models are useless for making inferential statements about ovenbirds. How useful these statements are, that is another question. Let's dive into confidence and prediction intervals a bit.
 
-```{r regr-pois_pred,cache=TRUE}
+```{r regr-pois_pred}
 B <- 2000
 alpha <- 0.05
 
@@ -272,7 +272,7 @@ legend("topleft", lty=1, col=1:5, bty="n",
 
 Let's see how these affect our prediction intervals:
 
-```{r regr-pois_poly_pi,cache=TRUE}
+```{r regr-pois_poly_pi}
 CI12 <- predict_sim(mP12, xnew, interval="confidence", level=1-alpha, B=B)
 PI12 <- predict_sim(mP12, xnew, interval="prediction", level=1-alpha, B=B)
 CI13 <- predict_sim(mP13, xnew, interval="confidence", level=1-alpha, B=B)
@@ -396,7 +396,7 @@ tmp[order(tmp$AIC),]
 The `step` function can be used to automatically select the best model
 based on adding/dropping terms:
 
-```{r regr-var_all,cache=TRUE}
+```{r regr-var_all}
 mPstep <- step(glm(formula_all, data=x, family=poisson), 
   trace=0) # use trace=1 to see all the steps
 summary(mPstep)
@@ -511,7 +511,7 @@ It is also common practice to consider generalized linear mixed models (GLMMs) f
 
 We can use the `lme4::glmer` function: use `SiteID` as random effect (we have exactly $n$ random effects).
 
-```{r regr-dist7,cache=TRUE}
+```{r regr-dist7}
 mPLN1 <- glmer(y ~ Decid * ConifWet + (1 | SiteID), data=x, family=poisson)
 summary(mPLN1)
 ```
@@ -520,14 +520,14 @@ Note: the number of unknowns we have to somehow estimate is now more than the nu
 
 Alternatively, we can use `SurveyArea` as a grouping variable. We have now $m < n$ random effects, and survey areas can be seen as larger landscapes within which the sites are clustered: $Y_ij\sim Poisson(\lambda_ij)$, $log(\lambda_ij) = \beta_0+\beta_1 x_{1ij}+\epsilon_i$, $\epsilon_i \sim Normal(0, \sigma^2)$. The index $i$ ($i=1,...,m$) defines the cluster (survey area), the $j$ ($j=1,...,n_i$) defines the sites within survey area $i$ ($n = \sum_{i=1}^m n_i$).
 
-```{r regr-dist8,cache=TRUE}
+```{r regr-dist8}
 mPLN2 <- glmer(y ~ Decid * ConifWet + (1 | SurveyArea), data=x, family=poisson)
 summary(mPLN2)
 ```
 
 In the battle of distributions (keeping the linear predictor part the same) the clustered GLMM was best supported:
 
-```{r regr-dist9,cache=TRUE}
+```{r regr-dist9}
 tmp <- AIC(mP, mNB, mZIP, mZINB, mPLN1, mPLN2)
 tmp$delta_AIC <- tmp$AIC - min(tmp$AIC)
 tmp[order(tmp$AIC),]
