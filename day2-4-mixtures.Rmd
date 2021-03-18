@@ -48,6 +48,12 @@ If we plot the time to first detection data, we can see how expected distributio
 
 ```{r}
 v <- get_events(b2)
+plot(v)
+```
+
+
+
+```{r}
 v1 <- v[!duplicated(v$i),]
 (phi_hat <- fitdistr(v1$t, "exponential")$estimate)
 
