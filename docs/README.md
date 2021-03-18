@@ -98,6 +98,24 @@ LOCAL copies will not be tracked and overwritten by git.
 
 Expect some follow up :)
 
+## References
+
+Sólymos, P., Matsuoka, S. M., Cumming, S. G., Stralberg, D., Fontaine, P., Schmiegelow, F. K. A., Song, S. J., and Bayne, E. M., 2018. Evaluating time-removal models for estimating availability of boreal birds during point-count surveys: sample size requirements and model complexity. _Condor_, 120: 765-786. [PDF](https://drive.google.com/file/d/13Czd_A82P0ZhIlvAEabxdHfmaZcJaNU3/view?usp=sharing)
+
+Sólymos, P., Matsuoka, S. M., Stralberg, D., Barker, N. K. S., and Bayne, E. M., 2018. Phylogeny and species traits predict bird detectability. _Ecography_, 41: 1595-1603. [PDF](https://drive.google.com/file/d/1CRKl-bh1tqxddijEWZoNcDO_xFIgOfWZ/view?usp=sharing)
+
+Van Wilgenburg, S. L., Sólymos, P., Kardynal, K. J. and Frey, M. D., 2017. Paired sampling standardizes point count data from humans and acoustic recorders. _Avian Conservation and Ecology_, 12(1):13. [PDF](https://drive.google.com/file/d/0B-q59n6LIwYPOTZyTXlDb0xFQTA/view?usp=sharing)
+
+Yip, D. A., Leston, L., Bayne, E. M., Sólymos, P. and Grover, A., 2017. Experimentally derived detection distances from audio recordings and human observers enable integrated analysis of point count data. _Avian Conservation and Ecology_, 12(1):11. [PDF](https://drive.google.com/file/d/0B-q59n6LIwYPQ2F6d1llQ3lPTzg/view?usp=sharing)
+
+Sólymos, P., and Lele, S. R., 2016. Revisiting resource selection probability functions and single-visit methods: clarification and extensions. _Methods in Ecology and Evolution_, 7:196-205. [PDF](https://drive.google.com/file/d/0B-q59n6LIwYPRE5tVlRMSmhLWmM/view?usp=sharing)
+
+Matsuoka, S. M., Mahon, C. L., Handel, C. M., Sólymos, P., Bayne, E. M., Fontaine, P. C., and Ralph, C. J., 2014. Reviving common standards in point-count surveys for broad inference across studies. _Condor_ 116:599-608. [PDF](https://drive.google.com/file/d/0B-q59n6LIwYPcGZNS3JSRUlBdDQ/view?usp=sharing)
+
+Sólymos, P., Matsuoka, S. M., Bayne, E. M., Lele, S. R., Fontaine, P., Cumming, S. G., Stralberg, D., Schmiegelow, F. K. A. & Song, S. J., 2013. Calibrating indices of avian density from non-standardized survey data: making the most of a messy situation. _Methods in Ecology and Evolution_ 4:1047-1058. [PDF](https://drive.google.com/file/d/0B-q59n6LIwYPV0RNUFU1N1dmS1E/view?usp=sharing)
+
+Matsuoka, S. M., Bayne, E. M., Sólymos, P., Fontaine, P., Cumming, S. G., Schmiegelow, F. K. A., & Song, S. A., 2012. Using binomial distance-sampling models to estimate the effective detection radius of point-counts surveys across boreal Canada. _Auk_ 129:268-282. [PDF](https://drive.google.com/file/d/0B-q59n6LIwYPbFhhRUtZNWQyMk0/view?usp=sharing)
+
 ## License
 
 The course material is licensed under [Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/) license. Source code is under [MIT](LICENSE) license.
