@@ -91,6 +91,8 @@ We use the `fitdistr` function to fit an exponential distribution to these event
 ```{r}
 phi <- 0.5
 (phi_hat <- fitdistr(v1$t, "exponential")$estimate)
+# which is the same as 1/mean(v1$t)
+1/mean(v1$t)
 ```
 
 The estimate is close to the true value of 0.5. Let's plot this
@@ -121,6 +123,23 @@ lines(stepfun(br, c(0, cumsum(table(i))/sum(table(i)))), col=3)
 legend("bottomright", bty="n", lty=c(1,1,1,1), col=c(1,2,4,3), 
   legend=c("Empirical", "Expected", "Estimated", "Binned"))
 ```
+
+Fitting survival model to the timt-to-event data
+
+```{r}
+library(survival)
+t21 <- v1$t
+y01 <- ifelse(is.na(t21), 0, 1)
+## censoring at max when we have nondetections (not here but in general)
+t21[is.na(t21)] <- attr(v1, "tlim")[2]
+#time cannot be 0, so we use a small number instead
+t21[t21 == 0] <- 0.001
+## survival object
+sv <- Surv(t21, y01)
+m <- survreg(sv ~ 1, dist="exponential")
+1/exp(coef(m))
+```
+
 
 ## Removal model
 

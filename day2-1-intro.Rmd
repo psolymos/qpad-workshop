@@ -28,6 +28,7 @@ Day 1
 Day 2
 
 - Behavioral complexities
+- Removal models and assumptions
 
 Day 3
 
@@ -61,6 +62,16 @@ qpad_local(day=2)
 ```
 
 LOCAL copies will not be tracked and overwritten by git. You can copy new files over and it will not impact your local copies.
+
+***
+
+# Update bSims
+
+Patched the Shiny apps, please update!
+
+```{r eval=FALSE}
+remotes::install_github("psolymos/bSims")
+```
 
 ***
 

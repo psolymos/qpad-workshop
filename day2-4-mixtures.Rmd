@@ -353,47 +353,77 @@ This result tells us mean abundance after correcting for availability bias, but 
 
 We'll address these problems next week. Let's just circle back to the assumptions.
 
+## Exercise 1
+
+What other mechanisms can lead to heterogeneity in behavior?
+
+Use the `run_app("bsimsHER")` Shiny app to explore:
+
+- find "edge cases"
+- copy `bsims_all()` calls from Shiny
 
 
+## Exercise 2
 
+How does over/under counting influence estimated vocalization rates?
 
-## Further issues
+(Hint: use the `perception` argument.)
 
-Stratify the landscape, habitat related behavior (mixture)
+```{r eval=FALSE}
+library(bSims)
 
-## Time to 1st detection info
+phi <- 0.5
+B <- 10
+perc <- seq(0.5, 1.5, 0.1)
 
-ARU, lots of hits, not always clear how many inds in recording
-Use tt1 (use the ABMI SM data set)
+l <- expand_list(
+  abund_fun = list(identity),
+  duration = 10,
+  vocal_rate = phi,
+  tau = Inf,
+  tint = list(c(3, 5, 10)),
+  perception = perc)
+str(l[1:2])
 
-## Methodological diffs
+## a list of bsims_all objects
+## $settings() $new(), $replicate(B, cl)
+b <- lapply(l, bsims_all)
 
-ARU vs human on p
+## repeat the runs B times for each setting
+s <- lapply(b, function(z) {
+  z$replicate(B, cl=4)
+})
 
-## Std data ove time
+## removal model
+phi_hat <- t(sapply(s, function(r) sapply(r, estimate)["phi",]))
 
-TSSR/ JDAY effects, but migration?
+matplot(perc, phi_hat, lty=1, type="l", col="grey", ylim=c(0, max(phi_hat)))
+lines(perc, apply(phi_hat, 1, median), lwd=2)
+abline(h=phi)
 
-## bSims/Shiny
-
-We can collect all our settings into a `bsims_all` call
-
-```{r}
-xall <- bsims_all(
-  extent=10,
-  road=0.25, edge=0.5,
-  density=c(1, 1, 0),
-  vocal_rate=phi,
-  move_rate=1, movement=0.2,
-  tau=0.8,
-  tint=c(3,5,10), 
-  rint=c(0.5, 1, 1.5))
-xall
+matplot(perc, 1-exp(-1*phi_hat), lty=1, type="l", col="grey", ylim=c(0,1))
+lines(perc, 1-exp(-1*apply(phi_hat, 1, median)), lwd=2)
+abline(h=1-exp(-1*phi), lty=2)
 ```
 
-This call does not evaluate the expression, but it creates a 'closure' with all the info inside to create independent realizations (i.e. none of the layers will match across the runs)
+This is how perceived individual ID is deduced using locations:
 
-```{r}
-xall$new()
+```{r eval=FALSE}
+set.seed(1)
+x <- bsims_all(density=0.1)$new()
+perception <- 0.75
+
+z <- get_events(x)
+z <- z[!duplicated(z$i),]
+dim(z)
+hc <- hclust(dist(cbind(z$x, z$y)), method="ward.D2")
+
+h <- length(unique(z$i)) * perception
+z$j <- cutree(hc, k=min(nrow(z), max(1, round(h))))
+
+plot(hc)
+table(true=z$i, perceived=z$j)
+plot(z$x, z$y, pch=z$j, col=z$j)
 ```
+
 
