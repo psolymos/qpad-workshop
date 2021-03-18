@@ -19,13 +19,13 @@ Start times in MDT
 ## Day 2
 
 - [ ] 10:00: Intro (slides)
-- [ ] 10:30: bSims intro
+- [ ] 10:30: Behavior/bSims
 - [ ] 10:50: --- BREAK ---
-- [ ] 11:00: Removal sampling I
-- [ ] 11:30: Removal sampling II
+- [ ] 11:00: Removal sampling
+- [ ] 11:30: Mixture models
 - [ ] 11:50: --- BREAK ---
-- [ ] 12:00: Mixture models continued
-- [ ] 12:30: Breaking assumptions
+- [ ] 12:00: Estimating abundance
+- [ ] 12:30: Practive: breaking assumptions
 - [ ] 13:00: --- Dismissal ---
 
 ## Day 3
