@@ -124,7 +124,7 @@ legend("bottomright", bty="n", lty=c(1,1,1,1), col=c(1,2,4,3),
   legend=c("Empirical", "Expected", "Estimated", "Binned"))
 ```
 
-Fitting survival model to the timt-to-event data
+Fitting survival model to the time-to-event data
 
 ```{r}
 library(survival)
