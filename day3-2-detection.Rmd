@@ -207,6 +207,10 @@ dd <- ds(dt$d, truncation = rmax, transect="point",
 c(true=tau, estimate=exp(dd$ddf$par)^2)
 ```
 
+
+BREAK
+
+
 ## Average detection
 
 To calculate the average probability of detecting individuals
@@ -309,8 +313,7 @@ lines(c(rmax, rmax), c(yh, 1), col=4)
 
 ```
 
-```{block2, type='rmdexercise'}
-**Exercise**
+## Exercise
 
 What would be a computational algorithm to calculate EDR
 for any distance function and truncation distance?
@@ -318,7 +321,7 @@ for any distance function and truncation distance?
 Trye to explain how the code below is working.
 
 Why are EDRs different for different truncation distances?
-```
+
 
 ```{r}
 find_edr <- function(dist_fun, ..., rmax=Inf) {
@@ -617,11 +620,9 @@ round(rbind(
 ## D    1.0    1.0601    1.1048
 ```
 
-```{block2, type='rmdexercise'}
-**Exercise**
+## Exercise
 
 If time permits, try different settings and time/distance intervals.
-```
 
 ## JOSM data
 
@@ -712,13 +713,12 @@ Mdis <- get(rownames(aic)[aic$delta_AIC == 0])
 summary(Mdis)
 ```
 
-```{block2, type='rmdexercise'}
-**Exercise**
+## Exercise
 
 Use `OBS` as predictor for `tau` and look at predicted EDRs.
 
 What is the practical issue with using observer as predictor?
-```
+
 
 After finding the best model, we predict `tau`:
 
@@ -746,14 +746,13 @@ m <- glm(ytot ~ 1, data=x, offset=off, family=poisson)
 exp(coef(m))
 ```
 
-```{block2, type='rmdexercise'}
-**Exercise**
+## Exercise
 
 Try distance sampling and density estimation for another species.
 
 Fit multiple GLMs with QPAD offsets and covariates affecting density,
 interpret the results and the visualize responses.
-```
+
 
 Sometimes, a recording is made at the survey location
 that is listened to and transcribed in the lab
@@ -761,3 +760,19 @@ using headphones and possibly a computer screen.
 This presents new challenges, and also new opportunities
 for analysis of count data -- and is the topic of the next chapter.
 
+
+## Dist samp + bSims
+
+Spatial patterns
+
+Movement
+
+Over/under counting
+
+Distance measurement error
+
+Explain conditioning (event/det)
+
+Habitat related issues (edge, road) --> Day 4
+
+Backup: ARU + human EDR complexities

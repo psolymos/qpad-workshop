@@ -25,9 +25,24 @@ Start times in MDT
 - [ ] 11:30: Mixture models
 - [ ] 11:50: --- BREAK ---
 - [ ] 12:00: Estimating abundance
-- [ ] 12:30: Practive: breaking assumptions
+- [ ] 12:30: Practice: breaking assumptions
 - [ ] 13:00: --- Dismissal ---
 
 ## Day 3
 
+- [ ] 10:00: Intro (slides)
+- [ ] 10:30: Distance functions
+- [ ] 10:50: --- BREAK ---
+- [ ] 11:00: Distance sampling
+- [ ] 11:30: Estimating abundance
+- [ ] 11:50: --- BREAK ---
+- [ ] 12:00: 
+- [ ] 12:30: Practice: patterns, movement, strata
+- [ ] 13:00: --- Dismissal ---
+
 ## Day 4
+
+Observer/technology effects
+
+Roadside surveys
+

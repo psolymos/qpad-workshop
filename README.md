@@ -100,6 +100,8 @@ Expect some follow up :)
 
 ## References
 
+Sólymos, P., Toms, J. D., Matsuoka, S. M., Cumming, S. G., Barker, N. K. S., Thogmartin, W. E., Stralberg, D., Crosby, A. D., Dénes, F. V., Haché, S., Mahon, C. L., Schmiegelow, F. K. A., and Bayne, E. M., 2020. Lessons learned from comparing spatially explicit models and the Partners in Flight approach to estimate population sizes of boreal birds in Alberta, Canada. _Condor_, 122: 1-22. [PDF](https://drive.google.com/file/d/115WgtPd4zUSIFfSTHbWYs8OCHNdpKkh5/view?usp=sharing) 
+
 Sólymos, P., Matsuoka, S. M., Cumming, S. G., Stralberg, D., Fontaine, P., Schmiegelow, F. K. A., Song, S. J., and Bayne, E. M., 2018. Evaluating time-removal models for estimating availability of boreal birds during point-count surveys: sample size requirements and model complexity. _Condor_, 120: 765-786. [PDF](https://drive.google.com/file/d/13Czd_A82P0ZhIlvAEabxdHfmaZcJaNU3/view?usp=sharing)
 
 Sólymos, P., Matsuoka, S. M., Stralberg, D., Barker, N. K. S., and Bayne, E. M., 2018. Phylogeny and species traits predict bird detectability. _Ecography_, 41: 1595-1603. [PDF](https://drive.google.com/file/d/1CRKl-bh1tqxddijEWZoNcDO_xFIgOfWZ/view?usp=sharing)
