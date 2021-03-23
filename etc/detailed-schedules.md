@@ -36,13 +36,15 @@ Start times in MDT
 - [ ] 11:00: Distance sampling
 - [ ] 11:30: Estimating abundance
 - [ ] 11:50: --- BREAK ---
-- [ ] 12:00: 
-- [ ] 12:30: Practice: patterns, movement, strata
+- [ ] 12:00: Practice: patterns, movement, strata
 - [ ] 13:00: --- Dismissal ---
 
 ## Day 4
 
-Observer/technology effects
-
-Roadside surveys
-
+- [ ] 10:00: Quick intro and jump into conding
+- [ ] 10:50: --- BREAK ---
+- [ ] 11:00: Integrating recordings
+- [ ] 11:30: Roadside surveys
+- [ ] 11:50: --- BREAK ---
+- [ ] 12:00: Free discussion
+- [ ] 13:00: --- Dismissal ---

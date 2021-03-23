@@ -36,9 +36,8 @@ Each day will consist of 3 sessions, roughly one hour each, with short breaks in
 |  |  3. Removal modeling techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-removal.html)  |
 |  |  3. Finite mixture models  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-4-mixtures.html)  |
 | **Day 3** |  **The detection process** |    |
-|  |  1. Distance sampling |    |
-|  |  2. Calibrating population density  |    |
-|  |  3. Observer effects  |    |
+|  |  1. Distance sampling  |  [Slides](https://peter.solymos.org/qpad-workshop/day3-1-intro.pdf)  |
+|  |  2. The detection process |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  |
 | **Day 4** |  **Behavioral complexities**  |    |
 |  |  1. Marginal, joint, and conditional models  |    |
 |  |  2. Roadside surveys  |    |
