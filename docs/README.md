@@ -36,9 +36,8 @@ Each day will consist of 3 sessions, roughly one hour each, with short breaks in
 |  |  3. Removal modeling techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-removal.html)  |
 |  |  3. Finite mixture models  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-4-mixtures.html)  |
 | **Day 3** |  **The detection process** |    |
-|  |  1. Distance sampling |    |
-|  |  2. Calibrating population density  |    |
-|  |  3. Observer effects  |    |
+|  |  1. Distance sampling  |  [Slides](https://peter.solymos.org/qpad-workshop/day3-1-intro.pdf)  |
+|  |  2. The detection process |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  |
 | **Day 4** |  **Behavioral complexities**  |    |
 |  |  1. Marginal, joint, and conditional models  |    |
 |  |  2. Roadside surveys  |    |
@@ -99,6 +98,8 @@ LOCAL copies will not be tracked and overwritten by git.
 Expect some follow up :)
 
 ## References
+
+Sólymos, P., Toms, J. D., Matsuoka, S. M., Cumming, S. G., Barker, N. K. S., Thogmartin, W. E., Stralberg, D., Crosby, A. D., Dénes, F. V., Haché, S., Mahon, C. L., Schmiegelow, F. K. A., and Bayne, E. M., 2020. Lessons learned from comparing spatially explicit models and the Partners in Flight approach to estimate population sizes of boreal birds in Alberta, Canada. _Condor_, 122: 1-22. [PDF](https://drive.google.com/file/d/115WgtPd4zUSIFfSTHbWYs8OCHNdpKkh5/view?usp=sharing) 
 
 Sólymos, P., Matsuoka, S. M., Cumming, S. G., Stralberg, D., Fontaine, P., Schmiegelow, F. K. A., Song, S. J., and Bayne, E. M., 2018. Evaluating time-removal models for estimating availability of boreal birds during point-count surveys: sample size requirements and model complexity. _Condor_, 120: 765-786. [PDF](https://drive.google.com/file/d/13Czd_A82P0ZhIlvAEabxdHfmaZcJaNU3/view?usp=sharing)
 
