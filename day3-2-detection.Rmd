@@ -1,4 +1,7 @@
-# The Detection Process {#detection}
+---
+title: "The Detection Process"
+author: "Peter Solymos <solymos@ualberta.ca>"
+---
 
 ## Introduction
 
