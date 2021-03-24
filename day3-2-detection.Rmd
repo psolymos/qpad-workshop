@@ -5,7 +5,7 @@ author: "Peter Solymos <solymos@ualberta.ca>"
 
 ## Introduction
 
-As part of the detection process, a skilled observer counts individual birds at a count station. New individuals are assigned to time and distance categories, the type of behavior also registered. During this process, auditory cues travel through the distance between the bird and the observer. As the pover of the sound fades away, the chanches of being detected also decreases. If the detection process is based on visual detections, vegetation can block line of sight, etc. In this chapter, we scrutinize how this detection process contributes to the factor $C$.
+As part of the detection process, a skilled observer counts individual birds at a count station. New individuals are assigned to time and distance categories, the type of behavior also registered. During this process, auditory cues travel through the distance between the bird and the observer. As the pover of the sound fades away, the chances of being detected also decreases. If the detection process is based on visual detections, vegetation can block line of sight, etc. In this chapter, we scrutinize how this detection process contributes to the factor $C$.
 
 ## Prerequisites
 
@@ -625,8 +625,6 @@ off <- log(Apq)
 m <- glm(ytot ~ 1, data=x, offset=off, family=poisson)
 exp(coef(m))
 ```
-
-## Exercise
 
 ## Exercise
 
