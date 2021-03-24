@@ -108,7 +108,7 @@ Density estimates using different corrections in 5 types of land cover
 1. Normalize and join data from projects,
 2. take multiple-duration subset and fit removal models,
 3. take multiple-distance subset and fit distance sampling models,
-4. predict $p$ and $g$ for all surveys,
+4. predict $p$ and $q$ (or $A$) for all surveys,
 5. use $log(Apq)$ offsets in log-linear models with total counts as response.
 
 Removal and distance models can deal with multiple methodologies in the same model.
@@ -117,12 +117,56 @@ Each modeling step can include covariates, which can be the same.
 
 ***
 
-# Advantages of this approach
+# What to do if you can't estimate $p$ & $q$
+
+See if you can use estimates from similar species.
+
+- phylogenetic correlation
+- trait info
+
+[lhreg R package](https://borealbirds.github.io/lhreg/)
+
+***
+
+# What to do if you can't estimate $p$ & $q$
+
+See if you can use estimates from similar studies.
+
+- the species code
+- coordinates and time
+- max duration and distance
+
+[BAM QPAD offsets](https://github.com/ABbiodiversity/recurring/blob/master/offset/README.md)
+
+***
+
+# Advantages
 
 - Smaller parameter space,
-- less colinearity,
 - straightforward model selection,
+- less colinearity,
 - quicker than joint modeling via integrated likelihood.
+
+***
+
+# Advantages
+
+\centering
+```{r echo=FALSE,fig.show="hold", out.width="49%"}
+include_graphics("images/variable-selection-1.png")
+include_graphics("images/variable-selection-2.png")
+```
+
+***
+
+# Disadvantages
+
+- Taking care of uncertainty needs more work
+
+***
+
+\centering
+**BREAK**
 
 ***
 
@@ -259,7 +303,7 @@ The recognizer gives a probabilistic output (reliability score) for each detecti
 # Human PC--ARU detectability differences
 
 \centering
-```{r echo=FALSE,out.width="150px"}
+```{r echo=FALSE,out.width="130px"}
 include_graphics("images/yip-2017-ace-fig-1.jpg")
 ```
 
@@ -401,8 +445,8 @@ Using $\hat{\Delta}^2$ as adjustment really helps in integrating human PC and AR
 
 # Roadside bias
 
-Roadside bias captures the different between a roadside survey count ($E[Y_R]$)
-and a count done in a similar off-road envoronment ($E[Y_H]$).
+Roadside bias captures the difference between a roadside survey count ($E[Y_R]$)
+and a count done in a similar off-road environment ($E[Y_H]$).
 
 Large variation across species:
 
@@ -578,7 +622,6 @@ Yip et al. 2017, [Condor](http://dx.doi.org/10.1650/CONDOR-16-93.1).
 
 # Sound attenuation: direction matters
 
-
 \centering
 ```{r echo=FALSE,out.width="180px"}
 include_graphics("images/distance-HER.png")
@@ -599,7 +642,8 @@ I usually combine some filtering with fixed effects.
 
 # The frontier
 
-- More and more ARU data: how to optimize transcription, time to 1st detection information
+- More and more ARU data: how to optimize transcription, time to 1st detection information, etc.
+- Automated species detection and distance estimation
 - Robust & simple methods to integrate repeated visits without assuming closure
 - Corrections for eBird data
 - Corrections for roadside (BBS) data
@@ -647,6 +691,26 @@ include_graphics("images/pifpix-fig-7.png")
 ```
 
 Bias depends on sampling and species
+
+***
+
+# Alberta results
+
+Alberta Biodiversity Monitoring Institute and Boreal Avian Modelling Project
+
+126 species
+
+[science.abmi.ca/birds](https://science.abmi.ca/birds/)
+
+***
+
+# National model results
+
+Boreal Avian Modelling Project
+
+143 species
+
+[borealbirds.github.io](https://borealbirds.github.io/)
 
 ***
 

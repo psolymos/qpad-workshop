@@ -1,0 +1,431 @@
+---
+title: "Recordings"
+author: "Peter Solymos <solymos@ualberta.ca>"
+---
+
+## Introduction
+
+Automated recording units (ARU) are increasingly being used for auditory
+surveys. There are numerous advantages for using ARUs, e.g.
+recordings can be stored in perpetuity to be transcribed 
+later, ARUs can be programmed to record at select times and dates over long
+time periods that would be prohibitive using human observers.
+
+Bird point counts have been traditionally done by human observers. Combining
+ARU data with traditional point counts thus require an understanding of
+how the ARU based counts relate to counts made by human observer in the field.
+The best way to approach this question is by simultaneously sampling
+by two approaches: (1) human observers doing traditional point count
+by registering time and distance interval an individual bird was first detected,
+and (2) record the same session at the same location by an ARU to be 
+identified/transcribed later in laboratory settings.
+
+## Prerequisites
+
+```{r aru-libs,message=TRUE,warning=FALSE}
+library(bSims)                # simulations
+library(detect)               # multinomial models
+library(mefa4)                # count manipulation
+library(paired)               # paired sampling data
+```
+
+## Paired sampling
+
+The expected value of the total count (single species) in a 10-minutes time interval
+using human observer (subscript $H$) based unlimited radius point count may be written as:
+$E[Y_{H}] = D A_{H} p_{H}$ where $Y_{H}$ is the count, $D$ is population density, $A$ is 
+the area sampled, $p_{H}$ is the probability that an average individual of the species
+is available for detection. The quantity $p_{H}$ can be estimated based on removal 
+sampling utilizing the multiple time intervals. $A_{H}$ is often unknown, but can
+be estimated using the effective detection radius: $A_{H}=\pi EDR_{H}^2$.
+Human observer based EDR is estimated from distance sampling.
+
+The ARU based survey (subscript $R$ for recorder) 
+can distinguish individuals within distinct time intervals,
+but assigning these individuals is not yet possible using a single ARU.
+An ARU based count thus can be seen ans an unlimited radius point count
+where the effective area sampled is unknown. The expected value for an
+ARU based count for a given species may be written as:
+$E[Y_{R}] = D A_{R} p_{R}$. $p_{R}$ can be estimated based on removal 
+sampling utilizing the multiple time intervals from the ARU based survey.
+The unknown sampling are can be written as $A_{R}=\pi EDR_{R}^2$. 
+The problem is that ARU based EDR cannot directly be estimated from the data
+because of the lack of multiple distance bands or individual based distance
+information.
+
+The advantage of simultaneous sampling by human observers (H) and ARUs (A)
+is that population density ($D=D_{H}=D_{R}$) is identical by design.
+Possible mechanisms for differences in availability of bird individuals for detection 
+($p_{H}$ vs. $p_{R}$) can include differences in how detections
+are made in the field vs. in laboratory (e.g. possibility of double checking).
+
+Both $p_{H}$ and $p_{R}$ can be estimated from the data, and the equivalence
+$p=p_{H}=p_{R}$ can be tested. So for the sake of simplicity, we assume that
+human observer and ARU based $p$'s are equal. 
+Dividing the expected values of the counts may be written as:
+
+$$\frac{E[Y_{R}]}{E[Y_{H}]} = \frac{D A_{R} p}{D A_{R} p} = \frac{\pi EDR_{R}^2}{\pi EDR_{H}^2} = \frac{EDR_{R}^2}{EDR_{H}^2}$$
+
+By substituting $EDR_{R}^2 = \Delta^2 EDR_{H}^2$ (and thus $EDR_{R} = \Delta EDR_{H}$) we get:
+
+$$\frac{E[Y_{R}]}{E[Y_{H}]} = \frac{\Delta^2 EDR_{H}^2}{EDR_{H}^2} = \Delta^2$$
+
+This means that dividing the mean counts from ARU and human observed counts
+would give an estimate of the squared scaling constant ($\Delta^2$) describing the
+relationship between the estimated $EDR_{H}$ and the unknown $EDR_{R}$.
+
+## Paired data
+
+Human observer surveys:
+
+* 0-50, 50-100, >100 m distance bands,
+* 0-3, 3-5, 5-10 minutes time intervals.
+
+ARU surveys:
+
+* unlimited distance,
+* 10 minutes survey in 1-minute time intervals.
+
+```{r}
+paired$DISTANCE[paired$SurveyType == "ARU"] <- "ARU"
+with(paired, ftable(SurveyType, Interval, DISTANCE))
+```
+
+
+Select a subset of species that we'll work with:
+
+```{r}
+xt <- as.matrix(Xtab(Count ~ PKEY + SPECIES, 
+  data=paired[paired$SurveyType == "HUM",]))
+
+SPP <- colnames(xt)
+## number of >0 counts
+ndis <- colSums(xt > 0)
+## max count
+maxd <- apply(xt, 2, max)
+nmin <- 15
+SPP <- SPP[ndis >= nmin & maxd > 1]
+SPP <- SPP[!(SPP %in%
+  c("CANG","COLO","COGO","COME","FRGU","BCFR","UNKN","RESQ",
+  "CORA","AMCR","WOSP","WWCR","PISI","EVGR", "RUGR", "SACR",
+  "NOFL"))]
+SPP
+```
+
+## Availability
+
+We estimated availability for human observer and ARU based counts 
+using the time interval information. ARU based intervals were
+collapsed to the 0-3-5-10 minutes intervals to match the human observer based
+design. 
+
+```{r}
+xtdurH <- Xtab(Count ~ PKEY + Interval + SPECIES, 
+  paired[paired$SurveyType == "HUM",])
+xtdurH <- xtdurH[SPP]
+xtdurR <- Xtab(Count ~ PKEY + Interval + SPECIES, 
+  paired[paired$SurveyType == "ARU",])
+xtdurR <- xtdurR[SPP]
+
+Ddur <- matrix(c(3, 5, 10), nrow(xtdurH[[1]]), 3, byrow=TRUE)
+Ddur2 <- rbind(Ddur, Ddur)
+
+xdur <- nonDuplicated(paired, PKEY, TRUE)
+xx <- xdur[rownames(xtdurR[[1]]),]
+```
+
+We estimated availability for species with at least 15 detections
+in both subsets of the data (making sure that the total count for at least
+some locations exceeded 1). We analyzed the human observer and ARU based data 
+in a single model using survey type as a dummy variable. 
+We tested if the estimate corresponding to survey type differed significantly
+from 0 using 95\% confidence intervals.
+
+The following table lists singing rates (`phi` 1/minute), probability of
+singing in a 10-minutes interval (`p10`), number of detections (`n`),
+and whether or not the confidence limits for the survey type estimate
+($\beta_1$) contained 0 (i.e. not significant survey effect).
+
+```{r}
+mdurR <- list()
+mdurH <- list()
+mdurHR <- list()
+mdurHR1 <- list()
+for (spp in SPP) {
+    yR <- as.matrix(xtdurR[[spp]])[,c("0-3 min","3-5 min","5-10 min")]
+    yH <- as.matrix(xtdurH[[spp]])[,c("0-3 min","3-5 min","5-10 min")]
+    yHR <- rbind(yH, yR)
+    mdurR[[spp]] <- cmulti(yR | Ddur ~ 1, type = "rem")
+    mdurH[[spp]] <- cmulti(yH | Ddur ~ 1, type = "rem")
+    aru01 <- rep(0:1, each=nrow(yH))
+    mdurHR[[spp]] <- cmulti(yHR | Ddur2 ~ 1, type = "rem")
+    mdurHR1[[spp]] <- cmulti(yHR | Ddur2 ~ aru01, type = "rem")
+}
+cfR <- sapply(mdurR, coef)
+cfH <- sapply(mdurH, coef)
+cfHR <- sapply(mdurHR, coef)
+cfHR1 <- t(sapply(mdurHR1, coef))
+names(cfR) <- names(cfH) <- names(cfHR) <- names(cfHR1) <- SPP
+
+phiR <- exp(cfR)
+phiH <- exp(cfH)
+phiHR <- exp(cfHR)
+
+## confidence interval for survey type effect
+ci <- t(sapply(mdurHR1, function(z) confint(z)[2,]))
+## does CI contain 0?
+table(0 %[]% ci)
+
+plot(phiR ~ phiH, 
+  ylim=c(0, max(phiH, phiR)), xlim=c(0, max(phiH, phiR)),
+  pch=c(21, 19)[(0 %[]% ci) + 1],
+  xlab=expression(phi[H]), ylab=expression(phi[R]),
+  cex=0.5+2*phiHR)
+abline(0,1)
+```
+
+```{block2, type='rmdexercise'}
+**Exercise**
+
+Which $\phi$ estimate should we use? Can we use `phiHR`? 
+Isn't that cheating to double the sample size? 
+Think about what we are conditioning on when estimating $\phi$, and what makes samples independent.
+```
+
+
+## Distance sampling
+
+We estimate EDR from human observer based counts:
+
+```{r}
+## Data for EDR estimation
+xtdis <- Xtab(Count ~ PKEY + DISTANCE + SPECIES, 
+  data=paired[paired$SurveyType == "HUM",])
+xtdis <- xtdis[SPP]
+for (i in seq_len(length(xtdis)))
+    xtdis[[i]] <- as.matrix(xtdis[[i]][,c("0-49 m", "50-100 m", ">100 m")])
+head(xtdis$YRWA)
+
+## distance radii
+Ddis <- matrix(c(0.5, 1, Inf), nrow(xtdis[[1]]), 3, byrow=TRUE)
+head(Ddis)
+
+## predictors
+xdis <- nonDuplicated(paired, PKEY, TRUE)
+xdis <- xdis[rownames(xtdis[[1]]),]
+```
+
+Fitting distance sampling models for each species:
+
+```{r results='hide'}
+mdis <- pblapply(xtdis, function(Y) {
+  cmulti(Y | Ddis ~ 1, xdis, type = "dis")
+})
+```
+
+```{r}
+tauH <- sapply(mdis, function(z) unname(exp(coef(z))))
+edrH <- 100 * tauH
+round(sort(edrH))
+hist(edrH)
+```
+
+## Scaling constant
+
+Counts are often modeled in a log-linear Poisson GLM. We used GLM to estimate
+the unknown scaling constant from simultaneous (paired) surveys. The Poisson mean
+for a count made at site $i$ by human observer is 
+$\lambda_{i,H} = D_{i} \pi EDR_H^2 p$. $EDR_H$ and $p$ are estimated using distance 
+sampling and removal sampling, respectively. Those estimates are used to
+calculate a correction factor $C = \pi EDR_H^2 p$ which is used as an offset
+on the log scale as $log(\lambda_{i,H}) = log(D_{i}) + log(C) = \beta_0 + log(C)$,
+where $\beta_0$ is the intercept in the GLM model.
+
+Following the arguments above, the Poisson mean for an ARU based count 
+made at site $i$ is $\lambda_{i,R} = D_{i} \pi \Delta^2 EDR_H^2 p = D_{i} \Delta^2 C$.
+On the log scale, this becomes
+$log(\lambda_{i,R}) = log(D_{i}) + log(\Delta^2) + log(C) = \beta_0 + \beta_1 + log(C)$,
+where $\beta_1$ is a contrast for ARU type surveys in the log-linear model.
+
+We used survey type as a binary variable ($x_i$) with value 0 for human observers
+and value 1 for ARUs. So the Poisson model is generalized as:
+$log(\lambda_{i}) = \beta_0 + x_i \beta_1 + log(C)$. $\Delta$ can be 
+calculated from $\beta_1$ as $\Delta = \sqrt{e^{\beta_i}}$.
+
+We used the Poisson GLM model describe before to estimate the $\beta_1$
+coefficient corresponding to survey type as binary predictor variable,
+and an offset term incorporating human observer based effective area 
+sampled and availability.
+
+```{r}
+phi <- phiHR
+tau <- tauH
+
+Y <- as.matrix(Xtab(Count ~ PKEYm + SPECIES, paired))
+X <- nonDuplicated(paired, PKEYm, TRUE)
+X <- X[rownames(Y),]
+X$distur <- ifelse(X$Disturbance != "Undisturbed", 1, 0)
+X$SurveyType <- relevel(X$SurveyType, "HUM")
+
+library(lme4)
+mods <- list()
+aictab <- list()
+Delta <- matrix(NA, length(SPP), 3)
+dimnames(Delta) <- list(SPP, c("est", "lcl", "ucl"))
+
+#spp <- "ALFL"
+for (spp in SPP) {
+  y <- Y[,spp]
+  C <- tau[spp]^2 * pi * (1-exp(-phi[spp]))
+  off <- rep(log(C), nrow(X))
+
+  mod0 <- glm(y ~ 1, X, offset=off, family=poisson)
+  mod1 <- glm(y ~ SurveyType, X, offset=off, family=poisson)
+  mod2 <- glm(y ~ SurveyType + distur, X, offset=off, family=poisson)
+
+  aic <- AIC(mod0, mod1, mod2)
+  aic$delta_AIC <- aic$AIC - min(aic$AIC)
+  aictab[[spp]] <- aic
+
+  Best <- get(rownames(aic)[aic$delta_AIC == 0])
+  #summary(Best)
+
+  mods[[spp]] <- Best
+  
+  ## this is Monte Carlo based CI, no need for Delta method
+  bb <- MASS::mvrnorm(10^4, coef(mod1), vcov(mod1))
+  Delta[spp,] <- c(sqrt(exp(coef(mod1)["SurveyTypeARU"])),
+    quantile(sqrt(exp(bb[,"SurveyTypeARU"])), c(0.025, 0.975)))
+}
+
+aic_support <- t(sapply(aictab, function(z) z[,3]))
+round(aic_support)
+```
+
+The following table show the estimate of $\Delta$ for each species,
+and the corresponding estimates of effective detection radius (EDR) in meters
+and effective area sampled ($A$) in ha:
+
+```{r,echo=FALSE,comment=NA}
+Delta_summary <- data.frame(
+  Species=SPP, 
+  EDR_H=round(edrH),
+  EDR_R=round(edrH * Delta[,"est"]),
+  A_H=round(tauH^2*pi, 2), 
+  A_R=round((Delta[,"est"]*tauH)^2*pi, 2),
+  Delta=round(Delta, 3))
+Delta_summary
+```
+
+But wait, if we started from expected values, shouldn't ratio of
+the mean counts give us $\Delta^2$?
+Let's see if we can get a similar $\Delta$ value from mean counts:
+
+```{r}
+(gm <- groupMeans(Y[,SPP], 1, X$SurveyType))
+Delta_summary$Delta.emp <- sqrt(gm["ARU",] / gm["HUM",])
+
+plot(Delta.est ~ Delta.emp, Delta_summary,
+  col=c(2,1)[(1 %[]% Delta[,-1]) + 1])
+abline(0, 1)
+abline(h=1, v=1, lty=2)
+```
+
+It looks like the fancy modeling was all for nothing, 
+theory prevailed. But it is always nice when things work out
+as expected.
+
+We can also see that $\Delta$ (especially the significant ones)
+tended to be less than 1, indicating that overall EDR for ARUs
+is slightly smaller that for human point counts. $\Delta$
+was significantly different from 1 only for relatively few species.
+
+```{block2, type='rmdexercise'}
+**Exercise**
+
+Can we pool all species' data together to estimate an overall $\Delta$
+value? Would that characterize this particular ARU type well enough?
+What are some of the arguments against this pooling? What might be
+driving the variation across species?
+```
+
+## Data integration
+
+Now we will pretend that we have no paired design. See how well
+fixed effects can handle the data integration without calibration.
+
+```{r}
+i <- sample(levels(X$PKEY), floor(nlevels(X$PKEY)/2))
+ss <- c(which(X$PKEY %in% i), which(!(X$PKEY %in% i)))
+
+mods2 <- list()
+for (spp in SPP) {
+  y <- Y[ss,spp]
+  C <- tau[spp]^2 * pi * (1-exp(-phi[spp]))
+  off <- rep(log(C), length(ss))
+
+  mod <- glm(y ~ SurveyType, X[ss,], offset=off, family=poisson)
+
+  mods2[[spp]] <- mod
+}
+Delta_summary$Delta.fix <- sapply(mods2, function(z) {
+  sqrt(exp(coef(z)[2]))
+})
+plot(Delta.fix ~ Delta.emp, Delta_summary)
+abline(0, 1)
+abline(h=1, v=1, lty=2)
+```
+
+## Exercise
+
+Use the script below to push the fixed effects method to the limit and
+see where it fails. We will explore the following two situations:
+(1) sample size and number of detections is small, (2) sampling is
+biased with respect to habitat strata.
+
+
+
+```{r eval=FALSE}
+X$open <- ifelse(X$Class_Name %in% c("Open Herb/Grass",
+    "Open coniferous","Open Mature Deciduous","Open Mixed",
+    "Open Northern","Open Young Deciduous",
+    "Open Young Mixed","Poorly Drained"), 1, 0)
+## proportion of samples from ARUs (original)
+prop_aru <- 0.5
+## proportion of ARU samples coming from open habitats
+prop_open <- 0.6
+
+n_aru <- round(nrow(X) * prop_aru)
+n_hum <- nrow(X) - n_aru
+w_aru <- prop_open*X$open + (1-prop_open)*(1-X$open)
+w_hum <- (1-prop_open)*X$open + prop_open*(1-X$open)
+
+id_aru <- sample(which(X$SurveyType == "ARU"), n_aru, 
+  replace=TRUE, prob=w_aru[X$SurveyType == "ARU"])
+id_hum <- sample(which(X$SurveyType == "HUM"), n_hum, 
+  replace=TRUE, prob=w_hum[X$SurveyType == "HUM"])
+
+ss <- c(id_aru, id_hum)
+addmargins(with(X[ss,], table(open, SurveyType)))
+
+mods3 <- list()
+for (spp in SPP) {
+  y <- Y[ss,spp]
+  C <- tau[spp]^2 * pi * (1-exp(-phi[spp]))
+  off <- rep(log(C), length(ss))
+
+  mod <- glm(y ~ SurveyType, X[ss,], offset=off, family=poisson)
+
+  mods3[[spp]] <- mod
+}
+
+
+Est <- sapply(mods3, function(z) sqrt(exp(coef(z)[2])))
+
+plot(Est ~ Delta.emp, Delta_summary)
+abline(0, 1)
+abline(h=1, v=1, lty=2)
+abline(lm(Est ~ Delta.emp, Delta_summary), col=2)
+```
+
+`prop_open` 0 vs. 1 leads to different deviation from the 1:1 line, eplain why.
