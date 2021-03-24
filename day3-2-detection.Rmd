@@ -89,11 +89,13 @@ plot(o)
 The distribution of the _observed distances_ is a product of detectability and the distribution of the individuals with respect to the point where the observer is located. For point counts, area increases linearly with radial distance,  implying a triangular distribution with respect to the point ($h(d)=\pi 2 d /A=\pi 2 d / \pi r_{max}^2=2 d / r_{max}^2$, where  $A$ is a circular survey area with truncation distance $r_{max}$). The product $g(d) h(d)$ gives the density function of the observed distances.
 
 ```{r}
-g <- function(d, tau, b=2, hazard=FALSE)
+g <- function(d, tau, b=2, hazard=FALSE) {
   if (hazard)
     1-exp(-(d/tau)^-b) else exp(-(d/tau)^b)
-h <- function(d, rmax)
+}
+h <- function(d, rmax) {
   2*d/rmax^2
+}
 ```
 
 ```{r fig.show='hold',out.width='33%'}
@@ -275,6 +277,20 @@ find_edr(g, tau=1, b=4, hazard=TRUE)
 
 find_edr(g, tau=1, rmax=1)
 ```
+
+
+```{r}
+vtau <- seq(0.001, 5, 0.1)
+vrmax <- seq(0.001, 2, 0.025)
+vals <- expand.grid(tau=vtau, rmax=vrmax)
+edr <- apply(vals, 1, function(z) find_edr(g, tau=z[1], rmax=z[2]))
+edr <-  matrix(edr, length(vtau), length(vrmax))
+
+image(vtau, vrmax, edr, col=hcl.colors(100, "Lajolla"))
+contour(vtau, vrmax, edr, add=TRUE, lwd=0.5)
+```
+
+
 
 The function $\pi(r)$ increases monotonically from 0 to 1:
 
