@@ -553,7 +553,7 @@ ydur <- Xtab(~ SiteID + Dur + SpeciesID ,
   josm$counts[josm$counts$DetectType1 != "V",])
 ```
 
-The `ydur` object is a list with dientical matrics, one for each species. We use the same species (`spp`) as before
+The `ydur` object is a list with identical matrices, one for each species. We use the same species (`spp`) as before
 
 ```{r regr-time2-1}
 y <- as.matrix(ydur[[spp]])
