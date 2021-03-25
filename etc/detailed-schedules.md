@@ -41,10 +41,10 @@ Start times in MDT
 
 ## Day 4
 
-- [ ] 10:00: Quick intro and jump into conding
+- [ ] 10:00: QPAD
 - [ ] 10:50: --- BREAK ---
-- [ ] 11:00: Integrating recordings
-- [ ] 11:30: Roadside surveys
+- [ ] 11:00: Using QPAD offsets in regression
+- [ ] 11:30: Recordings
 - [ ] 11:50: --- BREAK ---
-- [ ] 12:00: Free discussion
-- [ ] 13:00: --- Dismissal ---
+- [ ] 12:00: Roadside surveys + closing
+- [ ] 13:00: --- End ---
