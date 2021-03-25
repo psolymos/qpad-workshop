@@ -12,6 +12,8 @@ The course emphasizes critical thinking and active learning through hands on pro
 
 The expected outcome of the course is a solid foundation for further professional development via increased confidence in applying these methods for field observations.
 
+![Qpad overview](https://github.com/psolymos/qpad-workshop/raw/main/images/qpad-sketch.jpg)
+
 ## Instructor
 
 [**Dr. Peter Solymos**](https://peter.solymos.org) \
@@ -19,8 +21,6 @@ The expected outcome of the course is a solid foundation for further professiona
 [Department of Biological Sciences](https://www.ualberta.ca/biological-sciences/), [University of Alberta](https://ualberta.ca)
 
 ## Outline
-
-> Note: this outline is preliminary and subject to change.
 
 Each day will consist of 3 sessions, roughly one hour each, with short breaks in between.
 
@@ -42,7 +42,7 @@ Each day will consist of 3 sessions, roughly one hour each, with short breaks in
 |  |  1. QPAD review  |  [Slides](https://peter.solymos.org/qpad-workshop/day4-1-intro.pdf)  |
 |  |  2. Detectability offsets  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-2-offsets.html)  |
 |  |  3. Recordings  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-3-recordings.html)  |
-|  |  4. Closing remarks  |  See slides  |
+|  |  4. Closing remarks  |    |
 
 
 ## Before the course
@@ -92,7 +92,6 @@ qpad_local(day=1)
 ```
 
 LOCAL copies will not be tracked and overwritten by git.
-
 
 ## After the course
 
