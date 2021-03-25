@@ -375,43 +375,9 @@ qpad_local(day=2)</code></pre>
 <pre class="r"><code>## update bSims - some issues fixed
 #remotes::install_github(&quot;psolymos/bSims&quot;)
 
-library(bSims)              # simulations</code></pre>
-<pre><code>## Loading required package: intrval</code></pre>
-<pre><code>## Loading required package: mefa4</code></pre>
-<pre><code>## Loading required package: Matrix</code></pre>
-<pre><code>## mefa4 0.3-7   2020-02-28</code></pre>
-<pre><code>## 
-## Attaching package: &#39;mefa4&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:intrval&#39;:
-## 
-##     %notin%</code></pre>
-<pre><code>## Loading required package: MASS</code></pre>
-<pre><code>## Loading required package: deldir</code></pre>
-<pre><code>## deldir 0.2-9      Nickname: &quot;Morpheus and Euripides&quot;</code></pre>
-<pre><code>## 
-##      Note 1: As of version 0.2-1, error handling in this 
-##      package was amended to conform to the usual R protocol. 
-##      The deldir() function now actually throws an error 
-##      when one occurs, rather than displaying an error number 
-##      and returning a NULL.
-##  
-##      Note 2:  As of version 0.1-29 the arguments &quot;col&quot; 
-##      and &quot;lty&quot; of plot.deldir() had their names changed to 
-##      &quot;cmpnt_col&quot; and &quot;cmpnt_lty&quot; respectively basically 
-##      to allow &quot;col&quot; and and &quot;lty&quot; to be passed as &quot;...&quot; 
-##      arguments.
-##  
-##      Note 3: As of version 0.1-29 the &quot;plotit&quot; argument 
-##      of deldir() was changed to (simply) &quot;plot&quot;.
-##  
-##      See the help for deldir() and plot.deldir().</code></pre>
-<pre><code>## bSims 0.2-3   2021-03-15      kicky-chew</code></pre>
-<pre class="r"><code>library(detect)             # multinomial models</code></pre>
-<pre><code>## Loading required package: Formula</code></pre>
-<pre><code>## Loading required package: stats4</code></pre>
-<pre><code>## Loading required package: pbapply</code></pre>
-<pre><code>## detect 0.4-4      2020-08-12</code></pre>
-<pre class="r"><code>load(&quot;data/josm-data.rda&quot;)  # JOSM data
+library(bSims)              # simulations
+library(detect)             # multinomial models
+load(&quot;data/josm-data.rda&quot;)  # JOSM data
 set.seed(1)</code></pre>
 <p>Just spend a bit of time admiring the package startup messages…</p>
 </div>

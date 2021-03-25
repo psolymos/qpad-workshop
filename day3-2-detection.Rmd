@@ -727,3 +727,7 @@ res
 plot(diff ~ count, res)
 abline(h=0, lty=2)
 ```
+
+Think about how you'd do leave-one-out cross-validation.
+
+Think about how you would include `HAB` effects on $\tau$ (hint: main effect and interactions).
