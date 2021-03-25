@@ -388,6 +388,18 @@ plot(tr)
 
 The detection process and the transcription (following a prescribed protocol) is inseparable in the field. However, recordings made in the field can be processed by a number of different ways. Separating these processed gives the ability to make these comparisons on the exact same set of detections.
 
+Similarly to the `get_events()` function, we can visualize the accumulation of detections with time or with distance using the `get_detections()` function
+
+```{r}
+tr_dets <- get_detections(tr)
+
+plot(tr_dets, type="time", ylim=c(0, nrow(tr_dets)))
+curve((1-exp(-x*phi))*nrow(tr_dets), col=2, add=TRUE)
+
+plot(tr_dets, type="distance", ylim=c(0, nrow(tr_dets)))
+curve((1-exp(-(x/tau)^2))*nrow(tr_dets), col=2, add=TRUE)
+```
+
 ## Estimating density with truncation
 
 We now fit the removal model to the data pooled by time intervals. `p` is the cumulative probability of availability for the total duration:
@@ -622,7 +634,7 @@ summary(Mdis)
 After finding the best model, we predict `tau`:
 
 ```{r}
-tau <- exp(model.matrix(Mdis) %*% coef(Mdis))
+tau <- drop(exp(model.matrix(Mdis) %*% coef(Mdis)))
 boxplot(tau ~ HAB, x)
 ```
 
@@ -664,3 +676,33 @@ We need to talk about conditioning (1st event vs. 1st detection).
 Use `bSims::run_app("bsimsHER")` to see how habitat related numeric and behavior and detection differences can bias estimates.
 
 Next: Review QPAD, adding ARUs, looking into roadside data, etc.
+
+## Bonus
+
+Estimate $tau$ from distance sampling using species traits
+
+```{r}
+library(lhreg)
+
+
+yall_dis <- Xtab(~ SiteID + Dis + SpeciesID, 
+  josm$counts[josm$counts$DetectType1 != "V",])
+
+## common species (with life history data)
+SPP <- intersect(names(yall_dis), lhreg_data$spp)
+SPP <- sample(SPP)[1:10]
+sapply(yall_dis[SPP], sum)
+
+## number of rows
+n <- nrow(yall_dis[[1]])
+Ystack <- as.matrix(do.call(rbind, yall_dis[SPP]))
+Dstack <- matrix(c(0.5, 1, Inf), nrow(Ystack), 3, byrow=TRUE)
+Xstack <- lhreg_data[match(rep(SPP, each=n), lhreg_data$spp),]
+dim(Ystack)
+
+## Constant
+Mmulti <- cmulti(Ystack | Dstack ~ spp - 1, Xstack, type="dis")
+
+Mmulti <- cmulti(Ystack | Dstack ~ logmass + MaxFreqkHz + Mig2 + Hab2, 
+                 Xstack, type="dis")
+```
