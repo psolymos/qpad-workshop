@@ -683,26 +683,46 @@ Estimate $tau$ from distance sampling using species traits
 
 ```{r}
 library(lhreg)
-
+set.seed(1)
 
 yall_dis <- Xtab(~ SiteID + Dis + SpeciesID, 
   josm$counts[josm$counts$DetectType1 != "V",])
 
 ## common species (with life history data)
 SPP <- intersect(names(yall_dis), lhreg_data$spp)
-SPP <- sample(SPP)[1:10]
-sapply(yall_dis[SPP], sum)
+SPP <- sample(SPP)[1:20]
+n <- 200
+i <- sample(nrow(yall_dis[[1]]), n)
+yall_dis <- lapply(yall_dis[SPP], function(z) as.matrix(z[i,]))
+yall_dis <- yall_dis[sapply(yall_dis, sum)>0]
+SPP <- names(yall_dis)
 
 ## number of rows
-n <- nrow(yall_dis[[1]])
-Ystack <- as.matrix(do.call(rbind, yall_dis[SPP]))
+Ystack <- do.call(rbind, yall_dis)
 Dstack <- matrix(c(0.5, 1, Inf), nrow(Ystack), 3, byrow=TRUE)
-Xstack <- lhreg_data[match(rep(SPP, each=n), lhreg_data$spp),]
+Xstack <- droplevels(lhreg_data[match(rep(SPP, each=n), lhreg_data$spp),])
 dim(Ystack)
 
 ## Constant
-Mmulti <- cmulti(Ystack | Dstack ~ spp - 1, Xstack, type="dis")
+Mmulti1 <- cmulti(Ystack | Dstack ~ spp - 1, Xstack, type="dis")
+summary(Mmulti1)
 
-Mmulti <- cmulti(Ystack | Dstack ~ logmass + MaxFreqkHz + Mig2 + Hab2, 
+Mmulti2 <- cmulti(Ystack | Dstack ~ logmass + MaxFreqkHz + Mig2 + Hab2, 
                  Xstack, type="dis")
+summary(Mmulti2)
+AIC(Mmulti1, Mmulti2)
+
+tau1 <- exp(coef(Mmulti1))
+names(tau1) <- gsub("log.tau_spp", "", names(tau1))
+tau1
+
+X <- model.matrix(~ logmass + MaxFreqkHz + Mig2 + Hab2,
+  lhreg_data[match(names(tau1), lhreg_data$spp),])
+tau2 <- exp(X %*% coef(Mmulti2))
+
+res <- data.frame(count=sapply(yall_dis[names(tau1)], sum), tau1=tau1, tau2=tau2)
+res$diff <- res$tau1 - res$tau2
+
+plot(diff ~ count, res)
+abline(h=0, lty=2)
 ```
