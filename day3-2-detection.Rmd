@@ -714,7 +714,6 @@ AIC(Mmulti1, Mmulti2)
 
 tau1 <- exp(coef(Mmulti1))
 names(tau1) <- gsub("log.tau_spp", "", names(tau1))
-tau1
 
 X <- model.matrix(~ logmass + MaxFreqkHz + Mig2 + Hab2,
   lhreg_data[match(names(tau1), lhreg_data$spp),])
@@ -722,6 +721,8 @@ tau2 <- exp(X %*% coef(Mmulti2))
 
 res <- data.frame(count=sapply(yall_dis[names(tau1)], sum), tau1=tau1, tau2=tau2)
 res$diff <- res$tau1 - res$tau2
+
+res
 
 plot(diff ~ count, res)
 abline(h=0, lty=2)

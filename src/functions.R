@@ -210,50 +210,17 @@ function (x, y, a = 1, b = 1, angle = 0, segment = NULL, arc.only = TRUE,
     }
     invisible(NULL)
 }
-#' Estimate D, phi, tau from bSims output
-estimate_bsims <- function(REM) {
-  MaxDur <- max(tint)
-  MaxDis <- max(rint)
-  Ydur <- matrix(colSums(REM), 1)
-  Ddur <- matrix(tint, 1)
-  Ydis <- matrix(rowSums(REM), 1)
-  Ddis <- matrix(rint, 1)
-  if (length(tint) > 1 && sum(REM) > 0) {
-    Mrem <- cmulti.fit(Ydur, Ddur, type="rem")
-    phi <- exp(Mrem$coef)
-    p <- 1-exp(-MaxDur*phi)
-  } else {
-    Mrem <- NULL
-    phi <- NA
-    p <- NA
-  }
-  if (length(rint) > 1 && sum(REM) > 0) {
-    Mdis <- cmulti.fit(Ydis, Ddis, type="dis")
-    tau <- exp(Mdis$coef)
-    q <- if (is.infinite(MaxDis))
-      1 else (tau^2/MaxDis^2) * (1-exp(-(MaxDis/tau)^2))
-    A <- if (is.infinite(MaxDis))
-      pi * tau^2 else pi * MaxDis^2
-  } else {
-    Mdis <- NULL
-    tau <- NA
-    q <- NA
-    A <- NA
-  }
-  D <- sum(REM) / (A * p * q)
-  list(
-    Ydur=Ydur, Ddur=Ddur,
-    Ydis=Ydis, Ddis=Ddis,
-    Mrem=Mrem,
-    Mdis=Mdis,
-    phi=phi, tau=tau,
-    A=A, p=p, q=q,
-    D=D)
+
+#' Simple and fast ROC and AUC
+simple_roc <- function(labels, scores){
+    Labels <- labels[order(scores, decreasing=TRUE)]
+    data.frame(
+        TPR=cumsum(Labels)/sum(Labels),
+        FPR=cumsum(!Labels)/sum(!Labels),
+        Labels=Labels)
 }
-#' Summarize a set of bSims estimates
-summarize_bsims <- function(res) {
-  data.frame(
-    D=sapply(res, "[[", "D"),
-    phi=sapply(res, "[[", "phi"),
-    tau=sapply(res, "[[", "tau"))
+simple_auc <- function(ROC) {
+    ROC$inv_spec <- 1-ROC$FPR
+    dx <- diff(ROC$inv_spec)
+    sum(dx * ROC$TPR[-1]) / sum(dx)
 }

@@ -1,0 +1,530 @@
+---
+title: "QPAD offsets"
+author: "Peter Solymos <solymos@ualberta.ca>"
+---
+
+---
+title: "A Primer in Regression Techniques"
+author: "Peter Solymos <solymos@ualberta.ca>"
+---
+
+> All models are wrong, but some are useful -- Box
+
+## Introduction
+
+This chapter will provide all the foundations we need for the coming chapters. It is not intended as a general and all-exhaustive introduction to regression techniques, but rather the minimum requirement moving forwards. We will also hone our data processing and plotting skills.
+
+## Prerequisites
+
+```{r message=TRUE,warning=FALSE}
+library(mefa4)                # data manipulation
+library(mgcv)                 # GAMs
+library(pscl)                 # zero-inflated models
+library(lme4)                 # GLMMs
+library(MASS)                 # Negative Binomial GLM
+library(partykit)             # regression trees
+library(intrval)              # interval magic
+library(opticut)              # optimal partitioning
+library(visreg)               # regression visualization
+library(ResourceSelection)    # marginal effects
+library(MuMIn)                # multi-model inference
+library(detect)
+source("src/functions.R")         # some useful stuff
+load("data/josm-data.rda") # JOSM data
+```
+
+```{r}
+x <- josm$surveys
+x$FOR <- x$Decid + x$Conif+ x$ConifWet # forest
+x$AHF <- x$Agr + x$UrbInd + x$Roads # 'alienating' human footprint
+x$WET <- x$OpenWet + x$ConifWet + x$Water # wet + water
+cn <- c("Open", "Water", "Agr", "UrbInd", "SoftLin", "Roads", "Decid", 
+  "OpenWet", "Conif", "ConifWet")
+x$HAB <- droplevels(find_max(x[,cn])$index) # drop empty levels
+levels(x$HAB)[levels(x$HAB) %in% 
+  c("OpenWet", "Water", "Open", "Agr", "UrbInd", "Roads")] <- "Open"
+levels(x$HAB)[levels(x$HAB) %in% 
+  c("Conif", "ConifWet")] <- "Conif"
+x$OBS <- as.factor(x$ObserverID)
+```
+
+## Duration and distance intervals
+
+
+```{r}
+cts <- josm$counts[josm$counts$DetectType1 != "V",]
+cts$DurDis <- paste(cts$Dur, cts$Dis)
+table(cts$DurDis)
+
+ydurdis <- Xtab(~ SiteID + DurDis + SpeciesID, cts)
+```
+
+Create count for different methodologies
+
+```{r}
+spp <- "OVEN"
+y <- as.matrix(ydurdis[[spp]])
+yc <- cbind(
+  "3min/50m"=y[,"0-3min 0-50m"],
+  "5min/50m"=y[,"0-3min 0-50m"]+y[,"3-5min 0-50m"],
+  "10min/50m"=rowSums(y[,c("0-3min 0-50m", "3-5min 0-50m", "5-10min 0-50m")]),
+  "3min/100m"=rowSums(y[,c("0-3min 0-50m", "0-3min 50-100m")]),
+  "5min/100m"=rowSums(y[,c("0-3min 0-50m", "3-5min 0-50m",
+                    "0-3min 50-100m", "3-5min 50-100m")]),
+  "10min/100m"=rowSums(y[,c("0-3min 0-50m", "3-5min 0-50m", "5-10min 0-50m",
+                    "0-3min 50-100m", "3-5min 50-100m", "5-10min 50-100m")]),
+  "3min/Infm"=rowSums(y[,c("0-3min 0-50m", 
+                    "0-3min 50-100m", "0-3min 100+m")]),
+  "5min/Infm"=rowSums(y[,c("0-3min 0-50m", "3-5min 0-50m",
+                    "0-3min 50-100m", "3-5min 50-100m",
+                    "0-3min 100+m", "3-5min 100+m")]),
+  "10min/Infm"=rowSums(y[,c("0-3min 0-50m", "3-5min 0-50m", "5-10min 0-50m",
+                    "0-3min 50-100m", "3-5min 50-100m", "5-10min 50-100m",
+                    "0-3min 100+m", "3-5min 100+m", "5-10min 100+m")]))
+```
+
+See how mean counts are different:
+
+```{r}
+op <- par(mar=c(8,4,2,2), las=2)
+barplot(colMeans(yc), ylab="Mean count")
+par(op)
+```
+
+Removal model
+
+```{r}
+Ydur <- as.matrix(Xtab(~ SiteID + Dur + SpeciesID, cts)[[spp]])
+Ddur <- matrix(c(3, 5, 10), nrow(Ydur), 3, byrow=TRUE)
+Mdur <- cmulti(Ydur | Ddur ~ DAY, x[rownames(Ydur),], type="rem")
+
+phi <- drop(exp(model.matrix(Mdur) %*% coef(Mdur)))
+summary(phi)
+```
+
+Distance sampling
+
+```{r}
+Ydis <- as.matrix(Xtab(~ SiteID + Dis + SpeciesID, cts)[[spp]])
+Ddis <- matrix(c(0.5, 1, Inf), nrow(Ydis), 3, byrow=TRUE)
+Mdis <- cmulti(Ydis | Ddis ~ HAB, x[rownames(Ydur),], type="dis")
+
+tau <- drop(exp(model.matrix(Mdis) %*% coef(Mdis)))
+summary(tau)
+```
+
+Calculating offsets for the different methodologies (max duration and max distance)
+
+```{r}
+p_fun <- function (t, phi) {
+    1 - exp(-t * phi)
+}
+q_fun <- function (r, tau) {
+    tau^2 * (1 - exp(-r^2/tau^2))/r^2
+}
+
+## availability
+p3 <-  p_fun(3, phi)
+p5 <-  p_fun(5, phi)
+p10 <- p_fun(10, phi)
+
+## average detection
+q50  <- q_fun(0.5, tau)
+q100 <- q_fun(1, tau)
+## area sampled (known)
+A50 <- 0.5^2*pi
+A100 <- 1^2*pi
+## effective area sampled
+EA <- tau^2*pi
+
+## correction factors: C=Apq
+Corr <- cbind(
+  "3min/50m"=   A50 * p3  * q50,
+  "5min/50m"=   A50 * p5  * q50,
+  "10min/50m"=  A50 * p10 * q50,
+  "3min/100m"= A100 * p3  * q100,
+  "5min/100m"= A100 * p5  * q100,
+  "10min/100m"=A100 * p10 * q100,
+  "3min/Infm"= EA   * p3  * 1,
+  "5min/Infm"= EA   * p5  * 1,
+  "10min/Infm"=EA   * p10 * 1)
+```
+
+```{r}
+op <- par(mar=c(8,4,2,2), las=2)
+barplot(colMeans(Corr), ylab="Correction")
+par(op)
+```
+
+See how $E[Y]=DApq$ and thus $\hat{D}=E[Y]/Apq=E[Y]/C$ is going to work.
+Taking the mean of the $Apq$ term that varies from row to row is not strictly correct (it is correct for constant $\varphi$ and $\tau$)
+
+```{r}
+(D0 <- colMeans(yc) / colMeans(Corr))
+```
+
+```{r}
+op <- par(mar=c(8,4,2,2), las=2)
+barplot(D0, ylab="Density")
+abline(h=D0["10min/Infm"], lty=2)
+par(op)
+```
+
+Naive GLM
+
+```{r}
+M1 <- apply(yc, 2, function(z) {
+  glm(z ~ Decid, data=x, family=poisson)
+})
+t(sapply(M1, coef))
+```
+
+```{r}
+DN <- sapply(M1, function(z) mean(fitted(z)))
+op <- par(mar=c(8,4,2,2), las=2)
+barplot(DN, ylab="Density")
+par(op)
+```
+
+GLM with offsets: offset is the log of the correction factor: $o_i=log(C_i)=log(A_i p_i, q_i)$
+
+```{r}
+Off <- log(Corr)
+
+M2 <- lapply(colnames(yc), function(i) {
+  glm(yc[,i] ~ Decid, data=x, family=poisson, offset=Off[,i])
+})
+names(M2) <- colnames(yc)
+t(sapply(M2, coef))
+```
+
+```{r}
+X <- model.matrix(M2[[1]])
+DO <- sapply(M2, function(z) mean(exp(X %*% coef(z))))
+DO
+
+op <- par(mar=c(8,4,2,2), las=2)
+barplot(DO, ylab="Density")
+abline(h=DO["10min/Infm"], lty=2)
+par(op)
+```
+
+Compare the naive and the offsetted GLM
+
+```{r}
+Dec <- seq(0, 1, 0.05)
+Xpred <- cbind(1, Dec)
+Fit1 <- sapply(M1, function(z) drop(exp(Xpred %*% coef(z))))
+Fit2 <- sapply(M2, function(z) drop(exp(Xpred %*% coef(z))))
+```
+
+The 50 m counts under, the 100 and unlimited counts overestimated density compared to the estimate using the offsets
+
+```{r}
+op <- par(mfrow=c(1,2))
+matplot(Dec, Fit1, type="l", ylim=c(0, max(Fit1, Fit2)),
+  col=rep(1:3, each=3), lty=rep(1:3, 3))
+legend("topleft", bty="n", col=c(1,1,1,1,2,3), lty=c(1,2,3,1,1,1),
+  legend=c("3min", "5min", "10min", "50m", "100m", "Infm"))
+matplot(Dec, Fit2, type="l", ylim=c(0, max(Fit1, Fit2)),
+  col=rep(1:3, each=3), lty=rep(1:3, 3))
+legend("topleft", bty="n", col=c(1,1,1,1,2,3), lty=c(1,2,3,1,1,1),
+  legend=c("3min", "5min", "10min", "50m", "100m", "Infm"))
+par(op)
+```
+
+## Different models
+
+Let's explore models and develop:
+
+- estimation with offset
+- prediction without offset
+
+This will be a recipe book that you can use. We just did the Poisson GLM, but repeat it here with the 5 min 100 m counts (you can change this of course). We'll keep counts, offsets, and the fixed effects the same
+
+```{r}
+x <- x[order(x$Decid),] # order according to Decid
+y <- yc[rownames(x),"5min/100m"]
+o <- Off[rownames(x),"5min/100m"]
+X <- model.matrix(~ Decid, x)
+```
+
+
+### Poisson GLM
+
+```{r}
+## model fit
+MP <- glm(y ~ Decid, data=x, family=poisson, offset=o)
+
+## predicting D
+DP <- drop(exp(X %*% coef(MP)))
+```
+
+
+### Negative Binomial GLM
+
+
+```{r regr-dist2}
+MNB <- glm.nb(y ~ Decid + offset(o), data=x)
+
+DNB <- drop(exp(X %*% coef(MNB)))
+```
+
+### Zero inflated Poisson
+
+```{r regr-dist3}
+MZIP <- zeroinfl(y ~ Decid | 1, x, dist="poisson", offset=o)
+
+DZIP <- drop((1-plogis(coef(MZIP, "zero"))) * exp(X %*% coef(MZIP, "count")))
+```
+
+
+```{r}
+MZINB <- zeroinfl(y ~ Decid | 1, x, dist="negbin", offset=o)
+
+DZINB <- drop((1-plogis(coef(MZINB, "zero"))) * exp(X %*% coef(MZINB, "count")))
+```
+
+### Occupancy
+
+```{r}
+y01 <- ifelse(y > 0, 1, 0)
+MB <- glm(y01 ~ Decid, data=x, family=binomial("cloglog"), offset=o)
+
+## note: we are using exp instead of cloglog inverse link
+DB <- drop(exp(X %*% coef(MB)))
+```
+
+
+## Poisson GAM
+
+```{r}
+MPG <- mgcv::gam(y ~ s(Decid), data=x, family=poisson, offset=o)
+
+DPG <- predict(MPG, newdata=x, type="response")
+```
+
+
+## Poisson-Lognormal GLMM in lme4
+
+
+```{r}
+MPLN <- glmer(y ~ Decid + (1 | SiteID), data=x, family=poisson, offset=o)
+
+DPLN <- drop(exp(X %*% fixef(MPLN)))
+```
+
+
+
+### Regression trees
+
+```{r}
+library(gbm)
+library(dismo)
+library(ggplot2)
+
+xi <- data.frame(y=y,
+  x[,c("Open", "Water", "Agr", "UrbInd", "SoftLin", "Roads", 
+  "Decid", "OpenWet", "Conif", "ConifWet", "FOR", "AHF", "WET")])
+```
+
+```{r eval=FALSE}
+# this does k-fold cross validation
+brt <- gbm.step(xi,
+        gbm.y = 1,
+        gbm.x = 2:ncol(xi),
+        offset = o,
+        family = "poisson",
+        tree.complexity = 3,
+        learning.rate = 0.01,
+        bag.fraction = 0.5)
+DBRT <- predict.gbm(brt, xi, brt$n.trees, type="response")
+```
+
+```{r results="hide"}
+brt <- gbm(y ~ . + offset(o),
+        data=xi,
+        n.trees = 1000,
+        interaction.depth = 3,
+        shrinkage = 0.001,
+        bag.fraction = 0.5,
+        distribution = "poisson",
+        var.monotone = NULL,
+        keep.data = FALSE,
+        verbose = FALSE,
+        n.cores = 1)
+DBRT <- predict.gbm(brt, xi, brt$n.trees, type="response")
+```
+
+Variable importance
+
+```{r}
+rel_inf <- function(res) {
+    rel.inf <- relative.influence(res, res$n.trees)
+    rel.inf[rel.inf < 0] <- 0
+    i <- order(-rel.inf)
+    rel.inf <- 100 * rel.inf/sum(rel.inf)
+    out <- data.frame(var = res$var.names[i], rel.inf = rel.inf[i])
+    attr(out, "n.trees") <- res$n.trees
+    out
+}
+rel_inf(brt)
+```
+
+Marginal effects plots
+
+```{r}
+.plot_fun <- function(i, res, u) {
+    j <- as.character(u$var[i])
+    x <- plot.gbm(res, j,
+        n.trees = res$n.trees,
+        return.grid=TRUE,
+        type="response",
+        ylab=paste(res$rof_settings$spp, "density (males/ha)"),
+        xlab=paste0(j, " (", round(u$rel.inf[i], 2), "%)"))
+    colnames(x) <- c("x", "y")
+    x$var <- paste0(j, " (", round(u$rel.inf[i], 2), "%)")
+    attr(x, "out.attrs") <- NULL
+    x
+}
+plot_fun <- function(res) {
+    u <- rel_inf(res)
+    xx <- do.call(rbind, lapply(1:12, .plot_fun, res, u))
+    xx$var <- factor(xx$var, unique(xx$var))
+    p <- ggplot(xx, aes(x=x, y=y)) +
+        geom_line() +
+        facet_wrap(vars(var), scales="free_x") +
+        ylab(paste(res$rof_settings$spp, "density (males/ha)")) +
+        xlab("Predictor values") +
+        theme_minimal()
+    p
+}
+print(plot_fun(brt))
+```
+
+### Compare results
+
+```{r}
+AIC(MP, MNB, MZIP, MZINB, MPG, MPLN)
+
+mean(DP)
+mean(DB)
+mean(DNB)
+mean(DZIP)
+mean(DZINB)
+mean(DPG)
+mean(DPLN)
+mean(DBRT)
+```
+
+
+## Propagating error
+
+Use the Poisson GLM to show how to propagate uncertainty from the removal and distance model into the GLM
+
+
+```{r}
+library(MASS)
+B <- 100
+
+Xdur <- model.matrix(Mdur)
+(cfDur <- coef(Mdur))
+(vcvDur <- vcov(Mdur))
+
+cfBDur <- mvrnorm(B, cfDur, vcvDur)
+head(cfBDur)
+
+phiB <- apply(cfBDur, 1, function(z) {
+  drop(exp(Xdur %*% z))
+})
+
+p5B <-  apply(phiB, 2, function(z) p_fun(5, z))
+```
+
+```{r}
+Xdis <- model.matrix(Mdis)
+(cfDis <- coef(Mdis))
+(vcvDis <- vcov(Mdis))
+
+cfBDis <- mvrnorm(B, cfDis, vcvDis)
+tauB <- apply(cfBDis, 1, function(z) {
+  drop(exp(Xdis %*% z))
+})
+
+q100B <- apply(tauB, 2, function(z) q_fun(1, z))
+
+oB <- log(A100 * p5B * q100B)
+```
+
+```{r}
+COEF1 <- COEF2 <-  matrix(0, B, 2)
+for (i in 1:B) {
+  ii <- sample.int(nrow(x), nrow(x), replace=TRUE)
+  ## no error propagation
+  m1 <- glm(y[ii] ~ Decid, data=x[ii,], family=poisson, offset=o[ii])
+  COEF1[i,] <- coef(m1)
+  ## error propagation
+  m2 <- glm(y[ii] ~ Decid, data=x[ii,], family=poisson, offset=oB[ii,i])
+  COEF2[i,] <- coef(m2)
+}
+apply(COEF1, 2, sd)
+apply(COEF2, 2, sd)
+```
+
+```{r}
+Xpred2 <- Xpred[c(1,5,10,15,20),]
+pr1 <- t(apply(exp(Xpred2 %*% t(COEF1)), 1, 
+               quantile, c(0.05, 0.95)))
+pr2 <- t(apply(exp(Xpred2 %*% t(COEF2)), 1, 
+               quantile, c(0.05, 0.95)))
+data.frame(none=pr1, prop=pr2)
+```
+
+## Model validation
+
+Using offsets can have some side effects. Let's inspect the performance of a null and fixed effect GLM.
+
+When we look at observed vs. predicted based goodness of fit tests or AUC type metrics, we need $\lambda=DApq=D e^{offset}$
+
+```{r}
+M0 <- glm(y ~ 1, data=x, family=poisson, offset=o)
+M1 <- glm(y ~ Decid, data=x, family=poisson, offset=o)
+
+lam0 <- drop(exp(X[,1,drop=FALSE] %*% coef(M0))) * exp(o)
+lam1 <- drop(exp(X %*% coef(M1))) * exp(o)
+```
+
+Boxplot: when we have different methods mixed together the expected counts can vary greatly (not the case here, because we fixed methodology). Thus offsets can drive the goodness of fit metric.
+
+```{r}
+boxplot(lam0 ~ y)
+boxplot(lam1 ~ y)
+```
+
+```{r}
+simple_roc <- function(labels, scores){
+    Labels <- labels[order(scores, decreasing=TRUE)]
+    data.frame(
+        TPR=cumsum(Labels)/sum(Labels),
+        FPR=cumsum(!Labels)/sum(!Labels),
+        Labels=Labels)
+}
+simple_auc <- function(ROC) {
+    ROC$inv_spec <- 1-ROC$FPR
+    dx <- diff(ROC$inv_spec)
+    sum(dx * ROC$TPR[-1]) / sum(dx)
+}
+roc0 <- simple_roc(ifelse(y>0,1,0), lam0)
+roc1 <- simple_roc(ifelse(y>0,1,0), lam1)
+(auc0 <- simple_auc(roc0))
+(auc1 <- simple_auc(roc1))
+
+plot(roc0[,2:1], type="l")
+lines(roc1[,2:1], col=2)
+abline(0,1,lty=2)
+legend("topleft", bty="n", lty=1, col=c(1,2), legend=c("Null", "Decid"))
+```
+
+
+
+

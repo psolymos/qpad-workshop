@@ -162,6 +162,7 @@ include_graphics("images/variable-selection-2.png")
 # Disadvantages
 
 - Taking care of uncertainty needs more work
+- Model validation gets a bit tricky
 
 ***
 
