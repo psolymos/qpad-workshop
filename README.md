@@ -34,10 +34,11 @@ The vodeo recording from the workshop can be found on [YouTube](https://www.yout
 |  |  2. Organizing point count data |  [Notes](https://peter.solymos.org/qpad-workshop/day1-2-data-processing.html)  | [Part 1](https://youtu.be/4PLyaU6bqRc), [Part 2](https://youtu.be/dcsiv-v0UgA) |
 |  |  3. Regression techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day1-3-regression.html)  | [Part 1](https://youtu.be/z_TpcF0FD4o), [Part 2](https://youtu.be/ZdTgdTqxFSM) |
 | **Day 2** |  **Behavioral complexities**  |    |    |
-|  |  1. Statistical assumptions and nuisance variables  |  [Slides](https://peter.solymos.org/qpad-workshop/day2-1-intro.pdf)  | [Video]() |
-|  |  2. Behavioral complexities  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-2-behavior.html)  | [Video]() |
-|  |  3. Removal modeling techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-removal.html)  | [Video]() |
-|  |  4. Finite mixture models  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-4-mixtures.html)  | [Video]() |
+|  |  1. Statistical assumptions and nuisance variables  |  [Slides](https://peter.solymos.org/qpad-workshop/day2-1-intro.pdf)  | [Video](https://youtu.be/8v3Uf_aILxI) |
+|  |  2. Behavioral complexities  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-2-behavior.html)  | [bSims](https://youtu.be/gJ11_wlsEfU), [Video](https://youtu.be/UgGeaxMCs2c) |
+|  |  3. Removal modeling techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-removal.html)  | [Video](https://youtu.be/ny0ED9cxzeg) |
+|  |  4. Finite mixture models  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-4-mixtures.html)  | [Video](https://youtu.be/A1cnzXMMlxU) |
+|  |  5. Testing assumptions  |    | [Video](https://youtu.be/flF5NL73ZZE) |
 | **Day 3** |  **The detection process** |    |    |
 |  |  1. Distance sampling  |  [Slides](https://peter.solymos.org/qpad-workshop/day3-1-intro.pdf)  | [Video]() |
 |  |  2. The detection process |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  | [Video]() |
