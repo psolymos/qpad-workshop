@@ -25,12 +25,14 @@ The expected outcome of the course is a solid foundation for further professiona
 
 Each day will consist of 3 sessions, roughly one hour each, with short breaks in between.
 
+The vodeo recording from the workshop can be found on [YouTube](https://www.youtube.com/watch?v=cXGXvAOqEng&list=PLH424kyZX5ip0PfOo7g13nJEQNVxZlMOh).
+
 | Session | Topic | Files | Videos |
 | --- | --- | :---: | :---: |
 | **Day 1** |  **Naive techniques** |    |    |
-|  |  1. Introductions |  [Slides](https://peter.solymos.org/qpad-workshop/day1-1-intro.pdf)  | [Video]() |
-|  |  2. Organizing point count data |  [Notes](https://peter.solymos.org/qpad-workshop/day1-2-data-processing.html)  | [Video]() |
-|  |  3. Regression techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day1-3-regression.html)  | [Video]() |
+|  |  1. Introductions |  [Slides](https://peter.solymos.org/qpad-workshop/day1-1-intro.pdf)  | [Video](https://youtu.be/cXGXvAOqEng) |
+|  |  2. Organizing point count data |  [Notes](https://peter.solymos.org/qpad-workshop/day1-2-data-processing.html)  | [Part 1](https://youtu.be/4PLyaU6bqRc), [Part 2](https://youtu.be/dcsiv-v0UgA) |
+|  |  3. Regression techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day1-3-regression.html)  | [Part 1](https://youtu.be/z_TpcF0FD4o), [Part 2](https://youtu.be/ZdTgdTqxFSM) |
 | **Day 2** |  **Behavioral complexities**  |    |    |
 |  |  1. Statistical assumptions and nuisance variables  |  [Slides](https://peter.solymos.org/qpad-workshop/day2-1-intro.pdf)  | [Video]() |
 |  |  2. Behavioral complexities  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-2-behavior.html)  | [Video]() |
