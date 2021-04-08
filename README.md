@@ -37,12 +37,11 @@ The vodeo recording from the workshop can be found on [YouTube](https://www.yout
 |  |  1. Statistical assumptions and nuisance variables  |  [Slides](https://peter.solymos.org/qpad-workshop/day2-1-intro.pdf)  | [Video](https://youtu.be/8v3Uf_aILxI) |
 |  |  2. Behavioral complexities  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-2-behavior.html)  | [bSims](https://youtu.be/gJ11_wlsEfU), [Video](https://youtu.be/UgGeaxMCs2c) |
 |  |  3. Removal modeling techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-removal.html)  | [Video](https://youtu.be/ny0ED9cxzeg) |
-|  |  4. Finite mixture models  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-4-mixtures.html)  | [Video](https://youtu.be/A1cnzXMMlxU) |
-|  |  5. Testing assumptions  |    | [Video](https://youtu.be/flF5NL73ZZE) |
+|  |  4. Finite mixture models and testing assumptions  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-4-mixtures.html)  | [Mixtures](https://youtu.be/A1cnzXMMlxU), [Testing](https://youtu.be/flF5NL73ZZE) |
 | **Day 3** |  **The detection process** |    |    |
 |  |  1. Distance sampling  |  [Slides](https://peter.solymos.org/qpad-workshop/day3-1-intro.pdf)  | [Video]() |
 |  |  2. The detection process |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  | [Video]() |
-| **Day 4** |  **Behavioral complexities**  |    |    |
+| **Day 4** |  **Coming full circle**  |    |    |
 |  |  1. QPAD review  |  [Slides](https://peter.solymos.org/qpad-workshop/day4-1-intro.pdf)  | [Video]() |
 |  |  2. Detectability offsets  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-2-offsets.html)  | [Video]() |
 |  |  3. Recordings  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-3-recordings.html)  | [Video]() |
