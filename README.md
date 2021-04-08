@@ -12,7 +12,8 @@ The course emphasizes critical thinking and active learning through hands on pro
 
 The expected outcome of the course is a solid foundation for further professional development via increased confidence in applying these methods for field observations.
 
-![Qpad overview](https://github.com/psolymos/qpad-workshop/raw/main/images/qpad-sketch.jpg)
+<img src="https://github.com/psolymos/qpad-workshop/raw/main/images/qpad-sketch.jpg" alt="QPAD overview" width="50%" />
+
 
 ## Instructor
 
