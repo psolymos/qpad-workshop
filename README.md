@@ -25,7 +25,7 @@ The expected outcome of the course is a solid foundation for further professiona
 
 Each day will consist of 3 sessions, roughly one hour each, with short breaks in between.
 
-The vodeo recording from the workshop can be found on [YouTube](https://www.youtube.com/watch?v=cXGXvAOqEng&list=PLH424kyZX5ip0PfOo7g13nJEQNVxZlMOh).
+> The video recordings from the workshop can be found on [YouTube](https://www.youtube.com/watch?v=cXGXvAOqEng&list=PLH424kyZX5ip0PfOo7g13nJEQNVxZlMOh).
 
 | Session | Topic | Files | Videos |
 | --- | --- | :---: | :---: |
@@ -44,10 +44,10 @@ The vodeo recording from the workshop can be found on [YouTube](https://www.yout
 |  |  3. Estimating population density |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  | [Video](https://youtu.be/yeoGxRQd6o0) |
 |  |  4. Assumptions |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  | [Video](https://youtu.be/o0bx-vNCaL0) |
 | **Day 4** |  **Coming full circle**  |    |    |
-|  |  1. QPAD review  |  [Slides](https://peter.solymos.org/qpad-workshop/day4-1-intro.pdf)  | [Video]() |
-|  |  2. Detectability offsets  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-2-offsets.html)  | [Video]() |
-|  |  3. Recordings  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-3-recordings.html)  | [Video]() |
-|  |  4. Closing remarks  |    |    |
+|  |  1. QPAD overview  |  [Slides](https://peter.solymos.org/qpad-workshop/day4-1-intro.pdf)  | [Video](https://youtu.be/TU9rcwY2Y-g) |
+|  |  2. Models with detectability offsets  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-2-offsets.html)  | [Offsets](https://youtu.be/vw_WO2hgNwk), [Models](https://youtu.be/Cy68E1GyNVU) |
+|  |  3. Model validation and error propagation  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-2-offsets.html)  | [Validation](https://youtu.be/lRcJzfE838k), [Error](https://youtu.be/na5cTYNq2HM) |
+|  |  4. Recordings, roadsides, closing remarks  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-3-recordings.html)  | [Video](https://youtu.be/ckEDGdLA_J4) |
 
 
 ## Before the course
