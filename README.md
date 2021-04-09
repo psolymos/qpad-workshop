@@ -105,6 +105,7 @@ Expect some follow up :)
 ## Useful resources
 
 - [Using the QPAD package to get offsets based on estimates from the Boreal Avian Modelling Project's database](https://github.com/ABbiodiversity/recurring/blob/master/offset/README.md)
+- [NA-POPS: Point count Offsets for Population Sizes of North America landbirds](http://na-pops.org/)
 
 ## References
 
