@@ -102,6 +102,10 @@ LOCAL copies will not be tracked and overwritten by git.
 
 Expect some follow up :)
 
+## Useful resources
+
+- [Using the QPAD package to get offsets based on estimates from the Boreal Avian Modelling Project's database](https://github.com/ABbiodiversity/recurring/blob/master/offset/README.md)
+
 ## References
 
 Sólymos, P., Toms, J. D., Matsuoka, S. M., Cumming, S. G., Barker, N. K. S., Thogmartin, W. E., Stralberg, D., Crosby, A. D., Dénes, F. V., Haché, S., Mahon, C. L., Schmiegelow, F. K. A., and Bayne, E. M., 2020. Lessons learned from comparing spatially explicit models and the Partners in Flight approach to estimate population sizes of boreal birds in Alberta, Canada. _Condor_, 122: 1-22. [PDF](https://drive.google.com/file/d/115WgtPd4zUSIFfSTHbWYs8OCHNdpKkh5/view?usp=sharing) 
