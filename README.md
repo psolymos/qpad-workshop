@@ -39,8 +39,10 @@ The vodeo recording from the workshop can be found on [YouTube](https://www.yout
 |  |  3. Removal modeling techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-removal.html)  | [Video](https://youtu.be/ny0ED9cxzeg) |
 |  |  4. Finite mixture models and testing assumptions  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-4-mixtures.html)  | [Mixtures](https://youtu.be/A1cnzXMMlxU), [Testing](https://youtu.be/flF5NL73ZZE) |
 | **Day 3** |  **The detection process** |    |    |
-|  |  1. Distance sampling  |  [Slides](https://peter.solymos.org/qpad-workshop/day3-1-intro.pdf)  | [Video]() |
-|  |  2. The detection process |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  | [Video]() |
+|  |  1. The detection process  |  [Slides](https://peter.solymos.org/qpad-workshop/day3-1-intro.pdf)  | [Video](https://youtu.be/CkdYEF_hZqY) |
+|  |  2. Distance sampling and density |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  | [Video](https://youtu.be/x8GfKDEJcrA) |
+|  |  3. Estimating population density |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  | [Video](https://youtu.be/yeoGxRQd6o0) |
+|  |  4. Assumptions |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  | [Video](https://youtu.be/o0bx-vNCaL0) |
 | **Day 4** |  **Coming full circle**  |    |    |
 |  |  1. QPAD review  |  [Slides](https://peter.solymos.org/qpad-workshop/day4-1-intro.pdf)  | [Video]() |
 |  |  2. Detectability offsets  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-2-offsets.html)  | [Video]() |
