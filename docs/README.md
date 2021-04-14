@@ -12,7 +12,8 @@ The course emphasizes critical thinking and active learning through hands on pro
 
 The expected outcome of the course is a solid foundation for further professional development via increased confidence in applying these methods for field observations.
 
-![Qpad overview](https://github.com/psolymos/qpad-workshop/raw/main/images/qpad-sketch.jpg)
+<img src="https://github.com/psolymos/qpad-workshop/raw/main/images/qpad-sketch.jpg" alt="QPAD overview" width="50%" />
+
 
 ## Instructor
 
@@ -24,25 +25,29 @@ The expected outcome of the course is a solid foundation for further professiona
 
 Each day will consist of 3 sessions, roughly one hour each, with short breaks in between.
 
-| Session | Topic | Files |
-| --- | --- | :---: |
-| **Day 1** |  **Naive techniques** |    |
-|  |  1. Introductions |  [Slides](https://peter.solymos.org/qpad-workshop/day1-1-intro.pdf)  |
-|  |  2. Organizing point count data |  [Notes](https://peter.solymos.org/qpad-workshop/day1-2-data-processing.html)  |
-|  |  3. Regression techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day1-3-regression.html)  |
-| **Day 2** |  **Behavioral complexities**  |    |
-|  |  1. Statistical assumptions and nuisance variables  |  [Slides](https://peter.solymos.org/qpad-workshop/day2-1-intro.pdf)  |
-|  |  2. Behavioral complexities  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-2-behavior.html)  |
-|  |  3. Removal modeling techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-removal.html)  |
-|  |  4. Finite mixture models  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-4-mixtures.html)  |
-| **Day 3** |  **The detection process** |    |
-|  |  1. Distance sampling  |  [Slides](https://peter.solymos.org/qpad-workshop/day3-1-intro.pdf)  |
-|  |  2. The detection process |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  |
-| **Day 4** |  **Behavioral complexities**  |    |
-|  |  1. QPAD review  |  [Slides](https://peter.solymos.org/qpad-workshop/day4-1-intro.pdf)  |
-|  |  2. Detectability offsets  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-2-offsets.html)  |
-|  |  3. Recordings  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-3-recordings.html)  |
-|  |  4. Closing remarks  |    |
+> The video recordings from the workshop can be found on [YouTube](https://www.youtube.com/watch?v=cXGXvAOqEng&list=PLH424kyZX5ip0PfOo7g13nJEQNVxZlMOh).
+
+| Session | Topic | Files | Videos |
+| --- | --- | :---: | :---: |
+| **Day 1** |  **Naive techniques** |    |    |
+|  |  1. Introductions |  [Slides](https://peter.solymos.org/qpad-workshop/day1-1-intro.pdf)  | [Video](https://youtu.be/cXGXvAOqEng) |
+|  |  2. Organizing point count data |  [Notes](https://peter.solymos.org/qpad-workshop/day1-2-data-processing.html)  | [Part 1](https://youtu.be/4PLyaU6bqRc), [Part 2](https://youtu.be/dcsiv-v0UgA) |
+|  |  3. Regression techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day1-3-regression.html)  | [Part 1](https://youtu.be/z_TpcF0FD4o), [Part 2](https://youtu.be/ZdTgdTqxFSM) |
+| **Day 2** |  **Behavioral complexities**  |    |    |
+|  |  1. Statistical assumptions and nuisance variables  |  [Slides](https://peter.solymos.org/qpad-workshop/day2-1-intro.pdf)  | [Video](https://youtu.be/8v3Uf_aILxI) |
+|  |  2. Behavioral complexities  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-2-behavior.html)  | [bSims](https://youtu.be/gJ11_wlsEfU), [Video](https://youtu.be/UgGeaxMCs2c) |
+|  |  3. Removal modeling techniques  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-3-removal.html)  | [Video](https://youtu.be/ny0ED9cxzeg) |
+|  |  4. Finite mixture models and testing assumptions  |  [Notes](https://peter.solymos.org/qpad-workshop/day2-4-mixtures.html)  | [Mixtures](https://youtu.be/A1cnzXMMlxU), [Testing](https://youtu.be/flF5NL73ZZE) |
+| **Day 3** |  **The detection process** |    |    |
+|  |  1. The detection process  |  [Slides](https://peter.solymos.org/qpad-workshop/day3-1-intro.pdf)  | [Video](https://youtu.be/CkdYEF_hZqY) |
+|  |  2. Distance sampling and density |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  | [Video](https://youtu.be/x8GfKDEJcrA) |
+|  |  3. Estimating population density |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  | [Video](https://youtu.be/yeoGxRQd6o0) |
+|  |  4. Assumptions |  [Notes](https://peter.solymos.org/qpad-workshop/day3-2-detection.html)  | [Video](https://youtu.be/o0bx-vNCaL0) |
+| **Day 4** |  **Coming full circle**  |    |    |
+|  |  1. QPAD overview  |  [Slides](https://peter.solymos.org/qpad-workshop/day4-1-intro.pdf)  | [Video](https://youtu.be/TU9rcwY2Y-g) |
+|  |  2. Models with detectability offsets  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-2-offsets.html)  | [Offsets](https://youtu.be/vw_WO2hgNwk), [Models](https://youtu.be/Cy68E1GyNVU) |
+|  |  3. Model validation and error propagation  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-2-offsets.html)  | [Validation](https://youtu.be/lRcJzfE838k), [Error](https://youtu.be/na5cTYNq2HM) |
+|  |  4. Recordings, roadsides, closing remarks  |  [Notes](https://peter.solymos.org/qpad-workshop/day4-3-recordings.html)  | [Video](https://youtu.be/ckEDGdLA_J4) |
 
 
 ## Before the course
@@ -96,6 +101,11 @@ LOCAL copies will not be tracked and overwritten by git.
 ## After the course
 
 Expect some follow up :)
+
+## Useful resources
+
+- [Using the QPAD package to get offsets based on estimates from the Boreal Avian Modelling Project's database](https://github.com/ABbiodiversity/recurring/blob/master/offset/README.md)
+- [NA-POPS: Point count Offsets for Population Sizes of North America landbirds](http://na-pops.org/)
 
 ## References
 
