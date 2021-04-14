@@ -2,6 +2,9 @@
 
 > This course was originally developed for [BIOS2](https://bios2.usherbrooke.ca/2021/02/21/training-point-count-data-analysis/) held on March 16, 18, 23, 25 - Pacific: 9am-12pm, Mountain: 10am-1pm, Central: 11am-2pm, Eastern: 12-3pm
 
+<img src="https://github.com/psolymos/qpad-workshop/raw/main/images/thumb.jpg" alt="QPAD thumbnail" width="80%" align="center" />
+
+
 This course is aimed towards researchers analyzing field observations, who are often faced by data heterogeneities due to field sampling protocols changing from one project to another, or through time over the lifespan of projects, or trying to combine 'legacy' data sets with new data collected by recording units.
 
 Such heterogeneities can bias analyses when data sets are integrated inadequately, or can lead to information loss when filtered and standardized to common standards. Accounting for these issues is important for better inference regarding status and trend of species and communities.
